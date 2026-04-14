@@ -11,6 +11,7 @@ import (
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
 	"github.com/robertstevens/wiki-mcp/internal/server"
+	"github.com/robertstevens/wiki-mcp/internal/wiki"
 )
 
 var version = "dev"
@@ -73,6 +74,7 @@ func main() {
 	defer stop()
 
 	srv := server.New(cfg, version, logger)
+	wiki.RegisterTools(srv)
 
 	if err := srv.RunStdio(ctx, os.Stdin, os.Stdout); err != nil && ctx.Err() == nil {
 		logger.Error("server error", "err", err)
