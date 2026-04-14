@@ -1,10 +1,10 @@
 ---
 id: TASK-2
 title: Scaffold the wiki-mcp Go module and binary
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-04-13 21:08'
-updated_date: '2026-04-13 21:17'
+updated_date: '2026-04-14 18:51'
 labels: []
 milestone: m-0
 dependencies:
@@ -47,11 +47,33 @@ Deliver: `go build ./cmd/wiki-mcp && ./wiki-mcp --help` prints usage. No MCP, to
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 `go.mod` declares module `github.com/<user>/wiki-mcp` with a Go version floor of 1.22+
-- [ ] #2 `cmd/wiki-mcp/main.go` compiles and `./wiki-mcp --help` prints usage
-- [ ] #3 Directory layout matches the plan: `cmd/`, `internal/{config,server,wiki,web,sources}`, `web/theme/default/`
-- [ ] #4 `.golangci.yml` configured; `golangci-lint run` passes on the scaffold
-- [ ] #5 `go test ./...` runs green with at least one package-level smoke test
-- [ ] #6 `.gitignore` covers build artifacts (`wiki-mcp`, `dist/`)
-- [ ] #7 Makefile has targets: `build`, `test`, `lint`, `run`
+- [x] #1 `go.mod` declares module `github.com/<user>/wiki-mcp` with a Go version floor of 1.22+
+- [x] #2 `cmd/wiki-mcp/main.go` compiles and `./wiki-mcp --help` prints usage
+- [x] #3 Directory layout matches the plan: `cmd/`, `internal/{config,server,wiki,web,sources}`, `web/theme/default/`
+- [x] #4 `.golangci.yml` configured; `golangci-lint run` passes on the scaffold
+- [x] #5 `go test ./...` runs green with at least one package-level smoke test
+- [x] #6 `.gitignore` covers build artifacts (`wiki-mcp`, `dist/`)
+- [x] #7 Makefile has targets: `build`, `test`, `lint`, `run`
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Plan
+
+1. Init Go module (`go mod init github.com/robertstevens/wiki-mcp`, Go 1.22+)
+2. Create directory layout: `cmd/wiki-mcp/`, `internal/{config,server,wiki,web,sources}/`, `web/theme/default/`
+3. Write `cmd/wiki-mcp/main.go` with `flag` stdlib, version via ldflags, `--help` usage
+4. Add placeholder `.go` files in each internal package + embedded theme stub
+5. Write smoke test (at least one `_test.go`)
+6. Create `.golangci.yml`
+7. Update `.gitignore` for Go build artifacts
+8. Create `Makefile` with `build`, `test`, `lint`, `run` targets
+9. Verify: `go build`, `go test ./...`, `golangci-lint run`
+<!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Scaffolded Go module and project skeleton.\n\n- `go.mod` declares `github.com/robertstevens/wiki-mcp` with Go 1.22 floor\n- `cmd/wiki-mcp/main.go` uses stdlib `flag`; `--help`, `--version`, `--wiki`, `--http` flags; version injected via ldflags\n- Directory layout: `cmd/wiki-mcp/`, `internal/{config,server,wiki,web,sources}/`, `web/theme/default/`\n- `.golangci.yml` configured for golangci-lint v2; passes clean\n- Smoke test in `cmd/wiki-mcp/main_test.go` builds binary and verifies `--help` output\n- `.gitignore` covers `wiki-mcp`, `dist/`, `*.exe`\n- `Makefile` with `build`, `test`, `lint`, `run` targets\n- `.goreleaser.yaml` stub for TASK-20
+<!-- SECTION:FINAL_SUMMARY:END -->
