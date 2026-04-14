@@ -1,0 +1,367 @@
+package config
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func chdirTemp(t *testing.T, dir string) {
+	t.Helper()
+	origDir, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(origDir) })
+	os.Chdir(dir)
+}
+
+func TestDefaults(t *testing.T) {
+	d := Defaults()
+	if d.Web.Port != 9000 {
+		t.Errorf("default port = %d, want 9000", d.Web.Port)
+	}
+	if d.Web.Bind != "127.0.0.1" {
+		t.Errorf("default bind = %q, want 127.0.0.1", d.Web.Bind)
+	}
+	if d.Safety.ConfineToWikiPath != true {
+		t.Error("default ConfineToWikiPath should be true")
+	}
+	if d.Safety.MaxPageBytes != 1048576 {
+		t.Errorf("default MaxPageBytes = %d, want 1048576", d.Safety.MaxPageBytes)
+	}
+	if len(d.Index.Sections) != 4 {
+		t.Errorf("default sections count = %d, want 4", len(d.Index.Sections))
+	}
+}
+
+func TestLoadFromTOMLFile(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	tomlContent := `
+wiki_path = "` + wikiDir + `"
+
+[web]
+port = 8080
+bind = "0.0.0.0"
+`
+	tomlPath := filepath.Join(dir, "wiki-mcp.toml")
+	if err := os.WriteFile(tomlPath, []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	chdirTemp(t, dir)
+
+	cfg, err := Load(Flags{})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Web.Port != 8080 {
+		t.Errorf("port = %d, want 8080", cfg.Web.Port)
+	}
+	if cfg.Web.Bind != "0.0.0.0" {
+		t.Errorf("bind = %q, want 0.0.0.0", cfg.Web.Bind)
+	}
+	if cfg.Web.Theme != "default" {
+		t.Errorf("theme = %q, want default", cfg.Web.Theme)
+	}
+}
+
+func TestMissingTOMLFileFallsThrough(t *testing.T) {
+	dir := t.TempDir()
+	chdirTemp(t, dir)
+
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+	wp := wikiDir
+	_, err := Load(Flags{WikiPath: &wp})
+	if err != nil {
+		t.Fatalf("Load should succeed with no TOML file: %v", err)
+	}
+}
+
+func TestEnvOverridesFile(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+
+	tomlContent := `
+wiki_path = "` + wikiDir + `"
+
+[web]
+port = 8080
+`
+	tomlPath := filepath.Join(dir, "wiki-mcp.toml")
+	os.WriteFile(tomlPath, []byte(tomlContent), 0o644)
+
+	chdirTemp(t, dir)
+
+	t.Setenv("WIKI_MCP_WEB_PORT", "3000")
+
+	cfg, err := Load(Flags{})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Web.Port != 3000 {
+		t.Errorf("port = %d, want 3000 (env override)", cfg.Web.Port)
+	}
+}
+
+func TestFlagsOverrideEnv(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+
+	chdirTemp(t, dir)
+
+	t.Setenv("WIKI_MCP_WIKI_PATH", "/should/be/overridden")
+
+	wp := wikiDir
+	port := 7777
+	cfg, err := Load(Flags{WikiPath: &wp, Port: &port})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	absWiki, _ := filepath.Abs(wikiDir)
+	if cfg.WikiPath != filepath.Clean(absWiki) {
+		t.Errorf("WikiPath = %q, want %q (flag override)", cfg.WikiPath, absWiki)
+	}
+	if cfg.Web.Port != 7777 {
+		t.Errorf("port = %d, want 7777 (flag override)", cfg.Web.Port)
+	}
+}
+
+func TestWikiPathRequired(t *testing.T) {
+	dir := t.TempDir()
+	chdirTemp(t, dir)
+
+	_, err := Load(Flags{})
+	if err == nil {
+		t.Fatal("Load should fail when wiki_path not set")
+	}
+	// Error message should mention all three ways to set it
+	msg := err.Error()
+	for _, want := range []string{"WIKI_MCP_WIKI_PATH", "--wiki-path", "wiki_path"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error message should mention %q, got: %s", want, msg)
+		}
+	}
+}
+
+func TestInvalidTOML(t *testing.T) {
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad.toml")
+	os.WriteFile(bad, []byte("not valid [[ toml"), 0o644)
+
+	chdirTemp(t, dir)
+
+	t.Setenv("WIKI_MCP_CONFIG", bad)
+	_, err := Load(Flags{})
+	if err == nil {
+		t.Fatal("Load should fail on invalid TOML")
+	}
+}
+
+func TestEnvConfigFileNotFound(t *testing.T) {
+	dir := t.TempDir()
+	chdirTemp(t, dir)
+
+	// WIKI_MCP_CONFIG pointing at nonexistent file should not error
+	// (loadTOMLFile returns nil for missing files)
+	t.Setenv("WIKI_MCP_CONFIG", filepath.Join(dir, "nonexistent.toml"))
+	wp := filepath.Join(dir, "wiki")
+	os.MkdirAll(wp, 0o755)
+	_, err := Load(Flags{WikiPath: &wp})
+	if err != nil {
+		t.Fatalf("Load should succeed when WIKI_MCP_CONFIG points to missing file: %v", err)
+	}
+}
+
+func TestConfigFlagFileNotFound(t *testing.T) {
+	dir := t.TempDir()
+	chdirTemp(t, dir)
+
+	// --config pointing at nonexistent file should not error
+	missing := filepath.Join(dir, "missing.toml")
+	_, err := Load(Flags{ConfigFile: &missing})
+	// Actually this should still require wiki_path, but config file
+	// itself being missing is silently skipped
+	if err == nil {
+		t.Fatal("should still fail for missing wiki_path")
+	}
+}
+
+func TestResolveWikiPath(t *testing.T) {
+	root := "/home/user/wiki"
+	tests := []struct {
+		name    string
+		rel     string
+		confine bool
+		wantErr bool
+		want    string
+	}{
+		{
+			name: "simple subpath",
+			rel:  "pages/intro.md",
+			confine: true,
+			want: "/home/user/wiki/pages/intro.md",
+		},
+		{
+			name: "dot path",
+			rel:  "./pages/../pages/intro.md",
+			confine: true,
+			want: "/home/user/wiki/pages/intro.md",
+		},
+		{
+			name:    "traversal blocked",
+			rel:     "../etc/passwd",
+			confine: true,
+			wantErr: true,
+		},
+		{
+			name:    "traversal with dot segments",
+			rel:     "pages/../../etc/passwd",
+			confine: true,
+			wantErr: true,
+		},
+		{
+			name: "traversal allowed when confine off",
+			rel:  "../etc/passwd",
+			confine: false,
+			want: "/home/user/etc/passwd",
+		},
+		{
+			name: "root itself",
+			rel:  ".",
+			confine: true,
+			want: "/home/user/wiki",
+		},
+		{
+			name: "empty rel",
+			rel:  "",
+			confine: true,
+			want: "/home/user/wiki",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				WikiPath: root,
+				Safety: SafetyConfig{
+					ConfineToWikiPath: tt.confine,
+				},
+			}
+			got, err := cfg.ResolveWikiPath(tt.rel)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error for rel=%q, got path=%q", tt.rel, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("ResolveWikiPath(%q) = %q, want %q", tt.rel, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMustMutate(t *testing.T) {
+	cfg := &Config{Safety: SafetyConfig{ReadOnly: true}}
+	err := cfg.MustMutate()
+	if !errors.Is(err, ErrReadOnly) {
+		t.Errorf("MustMutate() = %v, want ErrReadOnly", err)
+	}
+
+	cfg.Safety.ReadOnly = false
+	if err := cfg.MustMutate(); err != nil {
+		t.Errorf("MustMutate() should return nil when not read-only: %v", err)
+	}
+}
+
+func TestSourcesPathDefault(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+
+	chdirTemp(t, dir)
+
+	wp := wikiDir
+	cfg, err := Load(Flags{WikiPath: &wp})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	want := filepath.Join(filepath.Dir(cfg.WikiPath), "sources")
+	if cfg.SourcesPath != want {
+		t.Errorf("SourcesPath = %q, want %q", cfg.SourcesPath, want)
+	}
+}
+
+func TestXDGConfigPath(t *testing.T) {
+	dir := t.TempDir()
+	xdgDir := filepath.Join(dir, "xdg")
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+	os.MkdirAll(filepath.Join(xdgDir, "wiki-mcp"), 0o755)
+
+	toml := `wiki_path = "` + wikiDir + `"
+[web]
+port = 4444
+`
+	os.WriteFile(filepath.Join(xdgDir, "wiki-mcp", "config.toml"), []byte(toml), 0o644)
+
+	chdirTemp(t, dir) // no CWD file
+
+	t.Setenv("XDG_CONFIG_HOME", xdgDir)
+
+	cfg, err := Load(Flags{})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Web.Port != 4444 {
+		t.Errorf("port = %d, want 4444 from XDG config", cfg.Web.Port)
+	}
+}
+
+func TestEnvScalarOverrides(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	os.MkdirAll(wikiDir, 0o755)
+
+	chdirTemp(t, dir)
+
+	t.Setenv("WIKI_MCP_WIKI_PATH", wikiDir)
+	t.Setenv("WIKI_MCP_WEB_BIND", "0.0.0.0")
+	t.Setenv("WIKI_MCP_WEB_THEME", "minimal")
+	t.Setenv("WIKI_MCP_LINKS_STYLE", "obsidian")
+	t.Setenv("WIKI_MCP_SAFETY_READ_ONLY", "true")
+	t.Setenv("WIKI_MCP_SAFETY_CONFINE", "false")
+
+	cfg, err := Load(Flags{})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Web.Bind != "0.0.0.0" {
+		t.Errorf("bind = %q, want 0.0.0.0", cfg.Web.Bind)
+	}
+	if cfg.Web.Theme != "minimal" {
+		t.Errorf("theme = %q, want minimal", cfg.Web.Theme)
+	}
+	if cfg.Links.Style != "obsidian" {
+		t.Errorf("links style = %q, want obsidian", cfg.Links.Style)
+	}
+	if !cfg.Safety.ReadOnly {
+		t.Error("ReadOnly should be true")
+	}
+	if cfg.Safety.ConfineToWikiPath {
+		t.Error("ConfineToWikiPath should be false")
+	}
+}
+

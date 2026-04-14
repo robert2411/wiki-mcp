@@ -3,6 +3,6 @@ existing/
 *.log
 
 # Go build artifacts
-wiki-mcp
+/wiki-mcp
 dist/
 *.exe
