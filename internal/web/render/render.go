@@ -91,6 +91,11 @@ func RenderPage(c *config.Config, relPath string) (*RenderedPage, error) {
 	return rdr.renderFile(absPath, relPath)
 }
 
+// RenderFile renders the page at absPath, using relPath for metadata and error messages.
+func (r *Renderer) RenderFile(absPath, relPath string) (*RenderedPage, error) {
+	return r.renderFile(absPath, relPath)
+}
+
 func (r *Renderer) renderFile(absPath, relPath string) (*RenderedPage, error) {
 	raw, err := os.ReadFile(absPath)
 	if err != nil {
@@ -300,7 +305,7 @@ func (wr *wikilinkRenderer) renderWikilink(w util.BufWriter, _ []byte, node ast.
 		_, _ = fmt.Fprintf(w, `<span class="broken-link">%s</span>`, html.EscapeString(display))
 		return ast.WalkContinue, nil
 	}
-	_, _ = fmt.Fprintf(w, `<a href="%s">%s</a>`, html.EscapeString(urlPath), html.EscapeString(display))
+	_, _ = fmt.Fprintf(w, `<a href="/%s">%s</a>`, html.EscapeString(urlPath), html.EscapeString(display))
 	return ast.WalkContinue, nil
 }
 

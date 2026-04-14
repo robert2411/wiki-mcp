@@ -338,9 +338,9 @@ var (
 	mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`)
 )
 
-// titleFromPath derives a page title from a relative path.
+// TitleFromPath derives a page title from a relative path.
 // e.g. "entities/qwen2.5-coder.md" → "Qwen2.5 Coder"
-func titleFromPath(rel string) string {
+func TitleFromPath(rel string) string {
 	base := strings.TrimSuffix(filepath.Base(rel), ".md")
 	base = strings.ReplaceAll(base, "-", " ")
 	// Title-case first letter of each word
@@ -383,8 +383,8 @@ func PageMove(cfg *config.Config, oldRel, newRel string) *ToolError {
 	}
 
 	// Rewrite links in all other pages
-	oldTitle := titleFromPath(oldRel)
-	newTitle := titleFromPath(newRel)
+	oldTitle := TitleFromPath(oldRel)
+	newTitle := TitleFromPath(newRel)
 
 	root := cfg.WikiPath
 	_ = filepath.WalkDir(root, func(abs string, d os.DirEntry, walkErr error) error {

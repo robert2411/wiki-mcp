@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search — wiki</title>
+  <link rel="stylesheet" href="/_theme/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1><a href="/">wiki</a></h1>
+    <form class="search-bar" action="/_search" method="get">
+      <input name="q" placeholder="Search…" value="{{.Query}}">
+      <button type="submit">Go</button>
+    </form>
+    <nav>
+      {{range .Nav}}<a href="/{{.Path}}">{{.Title}}</a>
+      {{end}}
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="search-results">
+      <h2>Search: {{.Query}}</h2>
+      {{if .Results}}
+        {{range .Results}}
+        <div class="search-result">
+          <h3><a href="/{{.Path}}">{{.Title}}</a></h3>
+          <div class="snippet">{{.Snippet}}</div>
+        </div>
+        {{end}}
+      {{else}}
+        <p class="no-results">No results for <strong>{{.Query}}</strong>.</p>
+      {{end}}
+    </div>
+  </main>
+</div>
+</body>
+</html>

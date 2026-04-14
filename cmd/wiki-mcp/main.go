@@ -9,8 +9,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/robertstevens/wiki-mcp/internal/config"
 	"github.com/robertstevens/wiki-mcp/internal/server"
+	"github.com/robertstevens/wiki-mcp/internal/web"
 	"github.com/robertstevens/wiki-mcp/internal/wiki"
 )
 
@@ -23,6 +26,7 @@ func main() {
 	port := flag.Int("port", 0, "HTTP listen port")
 	bind := flag.String("bind", "", "HTTP bind address")
 	transport := flag.String("transport", "stdio", "transport mode: stdio or sse")
+	serve := flag.Bool("serve", false, "enable the web UI (sets Web.Enabled=true)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "wiki-mcp %s — a personal wiki with MCP integration\n\n", version)
@@ -68,15 +72,38 @@ func main() {
 		os.Exit(1)
 	}
 
+	// --serve flag forces Web.Enabled on.
+	if *serve {
+		cfg.Web.Enabled = true
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	srv := server.New(cfg, version, logger)
-	wiki.RegisterTools(srv)
+	mcpSrv := server.New(cfg, version, logger)
+	wiki.RegisterTools(mcpSrv)
+	wiki.RegisterPrompts(mcpSrv)
 
-	if err := srv.RunStdio(ctx, os.Stdin, os.Stdout); err != nil && ctx.Err() == nil {
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return mcpSrv.RunStdio(gctx, os.Stdin, os.Stdout)
+	})
+
+	if cfg.Web.Enabled {
+		webSrv, err := web.NewServer(cfg, logger)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: start web server: %v\n", err)
+			os.Exit(1)
+		}
+		g.Go(func() error {
+			return webSrv.Run(gctx)
+		})
+	}
+
+	if err := g.Wait(); err != nil && ctx.Err() == nil {
 		logger.Error("server error", "err", err)
 		os.Exit(1)
 	}

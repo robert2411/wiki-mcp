@@ -90,7 +90,7 @@ func TestWikilink_Resolved(t *testing.T) {
 		t.Fatalf("renderBytes: %v", err)
 	}
 
-	want := `href="entities/qwen3.5"`
+	want := `href="/entities/qwen3.5"`
 	if !strings.Contains(page.HTML, want) {
 		t.Errorf("expected %q in HTML\ngot: %s", want, page.HTML)
 	}
@@ -200,7 +200,7 @@ func TestWikilinkAlias(t *testing.T) {
 	if !strings.Contains(page.HTML, "the Qwen model") {
 		t.Errorf("expected alias text in HTML\ngot: %s", page.HTML)
 	}
-	if !strings.Contains(page.HTML, `href="entities/qwen3.5"`) {
+	if !strings.Contains(page.HTML, `href="/entities/qwen3.5"`) {
 		t.Errorf("expected resolved href\ngot: %s", page.HTML)
 	}
 }

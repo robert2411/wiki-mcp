@@ -500,9 +500,9 @@ func TestTitleFromPath(t *testing.T) {
 		{"summary.md", "Summary"},
 	}
 	for _, tt := range tests {
-		got := titleFromPath(tt.path)
+		got := TitleFromPath(tt.path)
 		if got != tt.want {
-			t.Errorf("titleFromPath(%q) = %q, want %q", tt.path, got, tt.want)
+			t.Errorf("TitleFromPath(%q) = %q, want %q", tt.path, got, tt.want)
 		}
 	}
 }
