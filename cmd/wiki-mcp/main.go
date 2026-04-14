@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robertstevens/wiki-mcp/internal/server"
 )
 
 var version = "dev"
@@ -16,6 +21,7 @@ func main() {
 	wikiPath := flag.String("wiki-path", "", "path to the wiki directory")
 	port := flag.Int("port", 0, "HTTP listen port")
 	bind := flag.String("bind", "", "HTTP bind address")
+	transport := flag.String("transport", "stdio", "transport mode: stdio or sse")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "wiki-mcp %s — a personal wiki with MCP integration\n\n", version)
@@ -28,6 +34,16 @@ func main() {
 	if *showVersion {
 		fmt.Println(version)
 		os.Exit(0)
+	}
+
+	if *transport == "sse" {
+		fmt.Fprintln(os.Stderr, server.ErrSSENotImplemented)
+		os.Exit(1)
+	}
+
+	if *transport != "stdio" {
+		fmt.Fprintf(os.Stderr, "error: unknown transport %q (valid: stdio, sse)\n", *transport)
+		os.Exit(1)
 	}
 
 	// Collect only explicitly-set flags into the Flags struct.
@@ -51,9 +67,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Placeholders — will be wired up in later tasks.
-	_ = cfg
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
-	fmt.Printf("wiki-mcp %s\n", version)
-	fmt.Printf("wiki: %s\n", cfg.WikiPath)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	srv := server.New(cfg, version, logger)
+
+	if err := srv.RunStdio(ctx, os.Stdin, os.Stdout); err != nil && ctx.Err() == nil {
+		logger.Error("server error", "err", err)
+		os.Exit(1)
+	}
 }
