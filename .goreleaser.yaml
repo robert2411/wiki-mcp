@@ -1,2 +1,18 @@
-# Stub — filled in by TASK-20 (release pipeline).
 version: 2
+
+builds:
+  - id: wiki-mcp
+    main: ./cmd/wiki-mcp
+    binary: wiki-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
