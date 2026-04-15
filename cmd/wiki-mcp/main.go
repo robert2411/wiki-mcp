@@ -17,7 +17,11 @@ import (
 	"github.com/robertstevens/wiki-mcp/internal/wiki"
 )
 
-var version = "dev"
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 func main() {
 	showVersion := flag.Bool("version", false, "print version and exit")
@@ -37,7 +41,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println(version)
+		fmt.Printf("%s (commit=%s, built=%s)\n", version, commit, date)
 		os.Exit(0)
 	}
 

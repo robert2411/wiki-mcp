@@ -1,9 +1,11 @@
 .PHONY: build test lint run
 
 VERSION ?= dev
+COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 build:
-	go build -ldflags "-X main.version=$(VERSION)" -o wiki-mcp ./cmd/wiki-mcp
+	go build -ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)" -o wiki-mcp ./cmd/wiki-mcp
 
 test:
 	go test ./...
