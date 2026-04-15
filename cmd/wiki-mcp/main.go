@@ -13,6 +13,7 @@ import (
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
 	"github.com/robertstevens/wiki-mcp/internal/server"
+	"github.com/robertstevens/wiki-mcp/internal/sources"
 	"github.com/robertstevens/wiki-mcp/internal/web"
 	"github.com/robertstevens/wiki-mcp/internal/wiki"
 )
@@ -89,6 +90,8 @@ func main() {
 	mcpSrv := server.New(cfg, version, logger)
 	wiki.RegisterTools(mcpSrv)
 	wiki.RegisterPrompts(mcpSrv)
+	wiki.RegisterResources(mcpSrv)
+	sources.RegisterTools(mcpSrv)
 
 	g, gctx := errgroup.WithContext(ctx)
 
