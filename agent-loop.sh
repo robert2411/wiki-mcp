@@ -20,7 +20,7 @@ set -euo pipefail
 
 SLEEP_MINUTES="${SLEEP_MINUTES:-30}"
 SLEEP_SECONDS=$(( SLEEP_MINUTES * 60 ))
-MAX_RATE_LIMIT_RETRIES="${MAX_RATE_LIMIT_RETRIES:-6}"
+MAX_RATE_LIMIT_RETRIES="${MAX_RATE_LIMIT_RETRIES:-11}"
 
 # Anchor the run-file to the script's directory so the loop is controllable
 # regardless of where the user invokes it from.
