@@ -32,6 +32,7 @@ func main() {
 	bind := flag.String("bind", "", "HTTP bind address")
 	transport := flag.String("transport", "stdio", "transport mode: stdio or sse")
 	serve := flag.Bool("serve", false, "enable the web UI (sets Web.Enabled=true)")
+	serveOnly := flag.Bool("serve-only", false, "run web UI only (implies --serve), no MCP stdio transport")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "wiki-mcp %s — a personal wiki with MCP integration\n\n", version)
@@ -46,14 +47,16 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *transport == "sse" {
-		fmt.Fprintln(os.Stderr, server.ErrSSENotImplemented)
-		os.Exit(1)
-	}
+	if !*serveOnly {
+		if *transport == "sse" {
+			fmt.Fprintln(os.Stderr, server.ErrSSENotImplemented)
+			os.Exit(1)
+		}
 
-	if *transport != "stdio" {
-		fmt.Fprintf(os.Stderr, "error: unknown transport %q (valid: stdio, sse)\n", *transport)
-		os.Exit(1)
+		if *transport != "stdio" {
+			fmt.Fprintf(os.Stderr, "error: unknown transport %q (valid: stdio, sse)\n", *transport)
+			os.Exit(1)
+		}
 	}
 
 	// Collect only explicitly-set flags into the Flags struct.
@@ -77,8 +80,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// --serve flag forces Web.Enabled on.
-	if *serve {
+	// --serve / --serve-only both force Web.Enabled on.
+	if *serve || *serveOnly {
 		cfg.Web.Enabled = true
 	}
 
@@ -95,9 +98,11 @@ func main() {
 
 	g, gctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error {
-		return mcpSrv.RunStdio(gctx, os.Stdin, os.Stdout)
-	})
+	if !*serveOnly {
+		g.Go(func() error {
+			return mcpSrv.RunStdio(gctx, os.Stdin, os.Stdout)
+		})
+	}
 
 	if cfg.Web.Enabled {
 		webSrv, err := web.NewServer(cfg, logger)

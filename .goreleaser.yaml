@@ -62,6 +62,58 @@ changelog:
       - Merge pull request
       - Merge branch
 
+dockers:
+  - id: wiki-mcp-amd64
+    ids:
+      - wiki-mcp
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    use: buildx
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.source=https://github.com/robertstevens/wiki-mcp"
+
+  - id: wiki-mcp-arm64
+    ids:
+      - wiki-mcp
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    use: buildx
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-arm64"
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.source=https://github.com/robertstevens/wiki-mcp"
+
+docker_manifests:
+  - name_template: "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/robertstevens/wiki-mcp:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/robertstevens/wiki-mcp:{{ .Major }}"
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/robertstevens/wiki-mcp:latest"
+    skip_push: "{{ if .Prerelease }}true{{ end }}"
+    image_templates:
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/robertstevens/wiki-mcp:{{ .Version }}-arm64"
+
 brews:
   - name: wiki-mcp
     repository:
