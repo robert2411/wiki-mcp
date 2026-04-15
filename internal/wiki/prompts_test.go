@@ -191,6 +191,66 @@ func TestQueryPromptDef_Args(t *testing.T) {
 	}
 }
 
+func TestLintPromptDef_NoArgs(t *testing.T) {
+	p := lintPromptDef()
+
+	if p.Name != "lint" {
+		t.Errorf("prompt name: want lint, got %q", p.Name)
+	}
+
+	if len(p.Arguments) != 0 {
+		t.Errorf("expected 0 arguments, got %d", len(p.Arguments))
+	}
+}
+
+func TestLintPrompt_Text(t *testing.T) {
+	handler := handleLintPrompt()
+
+	req := mcp.GetPromptRequest{
+		Params: mcp.GetPromptParams{
+			Name:      "lint",
+			Arguments: map[string]string{},
+		},
+	}
+
+	result, err := handler(context.Background(), req)
+	if err != nil {
+		t.Fatalf("handler error: %v", err)
+	}
+
+	if len(result.Messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(result.Messages))
+	}
+
+	tc, ok := result.Messages[0].Content.(mcp.TextContent)
+	if !ok {
+		t.Fatalf("expected TextContent, got %T", result.Messages[0].Content)
+	}
+	text := tc.Text
+
+	for _, toolName := range []string{"orphans", "links_incoming"} {
+		if !strings.Contains(text, toolName) {
+			t.Errorf("prompt missing tool reference: %q", toolName)
+		}
+	}
+
+	// Must instruct computing pass number from log history
+	if !strings.Contains(text, "log_tail") {
+		t.Error("prompt missing log_tail call for pass number computation")
+	}
+	if !strings.Contains(text, "pass") {
+		t.Error("prompt missing pass number logic")
+	}
+
+	// Log-append header format must be exact
+	if !strings.Contains(text, "lint | pass N") {
+		t.Error("prompt missing log header format 'lint | pass N'")
+	}
+	if !strings.Contains(text, "log_append") {
+		t.Error("prompt missing log_append call")
+	}
+}
+
 func TestIngestPromptDef_Args(t *testing.T) {
 	p := ingestPromptDef()
 

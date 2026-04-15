@@ -86,8 +86,8 @@ func TestParseIndex_Sections(t *testing.T) {
 	}
 
 	// Stats should be parsed
-	if doc.Stats.WikiPages != "21" {
-		t.Errorf("wiki pages: want 21, got %q", doc.Stats.WikiPages)
+	if doc.Stats.WikiPages != "22" {
+		t.Errorf("wiki pages: want 22, got %q", doc.Stats.WikiPages)
 	}
 }
 

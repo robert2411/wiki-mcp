@@ -18,10 +18,14 @@ var ingestPromptTemplate string
 //go:embed prompts/query.md
 var queryPromptTemplate string
 
+//go:embed prompts/lint.md
+var lintPromptText string
+
 // RegisterPrompts registers all MCP prompts on the server.
 func RegisterPrompts(srv *server.Server) {
 	srv.RegisterPrompt(ingestPromptDef(), handleIngestPrompt())
 	srv.RegisterPrompt(queryPromptDef(), handleQueryPrompt())
+	srv.RegisterPrompt(lintPromptDef(), handleLintPrompt())
 }
 
 func ingestPromptDef() mcp.Prompt {
@@ -86,6 +90,26 @@ type queryPromptData struct {
 }
 
 var queryTmpl = template.Must(template.New("query").Parse(queryPromptTemplate))
+
+func lintPromptDef() mcp.Prompt {
+	return mcp.NewPrompt("lint",
+		mcp.WithPromptDescription("Lint the wiki: find orphans, contradictions, staleness, gaps, and missing cross-refs. Reports findings and offers fixes. Appends a lint pass entry to log.md on completion."),
+	)
+}
+
+func handleLintPrompt() mcpserver.PromptHandlerFunc {
+	return func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		return mcp.NewGetPromptResult(
+			"Lint the wiki",
+			[]mcp.PromptMessage{
+				{
+					Role:    mcp.RoleUser,
+					Content: mcp.NewTextContent(lintPromptText),
+				},
+			},
+		), nil
+	}
+}
 
 func handleQueryPrompt() mcpserver.PromptHandlerFunc {
 	return func(ctx context.Context, req mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {

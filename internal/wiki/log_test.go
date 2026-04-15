@@ -33,21 +33,21 @@ func TestLogTail_ExistingLog(t *testing.T) {
 		t.Fatalf("LogTail failed: %v", te)
 	}
 
-	// existing/wiki/log.md has 13 entries
+	// existing/wiki/log.md has 14 entries
 	if len(entries) != 10 {
-		t.Errorf("expected 10 entries (tail of 13), got %d", len(entries))
+		t.Errorf("expected 10 entries (tail of 14), got %d", len(entries))
 	}
 
-	// Last entry is the lint pass
+	// Last entry is the most recent ingest
 	last := entries[len(entries)-1]
-	if last.Operation != "lint" {
-		t.Errorf("last entry operation: want lint, got %q", last.Operation)
+	if last.Operation != "ingest" {
+		t.Errorf("last entry operation: want ingest, got %q", last.Operation)
 	}
-	if last.Date != "2026-04-11" {
-		t.Errorf("last entry date: want 2026-04-11, got %q", last.Date)
+	if last.Date != "2026-04-15" {
+		t.Errorf("last entry date: want 2026-04-15, got %q", last.Date)
 	}
-	if !strings.Contains(last.Title, "pass 1") {
-		t.Errorf("last entry title: want 'pass 1', got %q", last.Title)
+	if !strings.Contains(last.Title, "MCP stdio Transport") {
+		t.Errorf("last entry title: want 'MCP stdio Transport', got %q", last.Title)
 	}
 }
 
@@ -59,8 +59,8 @@ func TestLogTail_AllEntries(t *testing.T) {
 		t.Fatalf("LogTail failed: %v", te)
 	}
 
-	if len(entries) != 13 {
-		t.Errorf("expected 13 total entries, got %d", len(entries))
+	if len(entries) != 14 {
+		t.Errorf("expected 14 total entries, got %d", len(entries))
 	}
 
 	// First entry
@@ -109,8 +109,8 @@ func TestLogAppend_Basic(t *testing.T) {
 		t.Fatalf("LogTail failed: %v", te)
 	}
 
-	if len(entries) != 14 {
-		t.Errorf("expected 14 entries after append, got %d", len(entries))
+	if len(entries) != 15 {
+		t.Errorf("expected 15 entries after append, got %d", len(entries))
 	}
 
 	last := entries[len(entries)-1]
