@@ -23,6 +23,7 @@ import (
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
 	"github.com/robertstevens/wiki-mcp/internal/web/render"
+	"github.com/robertstevens/wiki-mcp/internal/wiki"
 	webtheme "github.com/robertstevens/wiki-mcp/web"
 )
 
@@ -42,28 +43,38 @@ type Server struct {
 	tmplSrch *template.Template
 	themeFS  fs.FS
 
-	// mu guards renderer, indexCache, and pageCache. All three are rebuilt
-	// lazily on first use and nulled by InvalidateCache() when the file watcher
-	// detects changes.
-	mu         sync.RWMutex
-	renderer   *render.Renderer
-	indexCache []SearchIndexEntry
-	pageCache  map[string]*pageEntry
+	// mu guards renderer, indexCache, navCache, titleCache, and pageCache. All
+	// are rebuilt lazily on first use and nulled by InvalidateCache() when the
+	// file watcher detects changes.
+	mu          sync.RWMutex
+	renderer    *render.Renderer
+	indexCache  []SearchIndexEntry
+	navCache    []navSection
+	titleCache  string // empty = not yet loaded
+	pageCache   map[string]*pageEntry
 }
 
 // pageData is passed to page.html.
 type pageData struct {
 	Title       string
+	WikiTitle   string
 	Query       string
 	ContentHTML template.HTML
-	Nav         []navEntry
+	Nav         []navSection
 }
 
 // searchData is passed to search.html.
 type searchData struct {
-	Query   string
-	Results []SearchIndexEntry
-	Nav     []navEntry
+	WikiTitle string
+	Query     string
+	Results   []SearchIndexEntry
+	Nav       []navSection
+}
+
+// navSection groups nav links under a heading from index.md.
+type navSection struct {
+	Title string
+	Links []navEntry
 }
 
 type navEntry struct {
@@ -158,13 +169,15 @@ func (s *Server) buildRouter() http.Handler {
 	return r
 }
 
-// InvalidateCache nils the renderer, search index, and page cache so they are
-// rebuilt on the next request. Called by the file watcher on disk changes;
-// also exported for testing.
+// InvalidateCache nils the renderer, search index, nav, title, and page cache
+// so they are rebuilt on the next request. Called by the file watcher on disk
+// changes; also exported for testing.
 func (s *Server) InvalidateCache() {
 	s.mu.Lock()
 	s.renderer = nil
 	s.indexCache = nil
+	s.navCache = nil
+	s.titleCache = ""
 	s.pageCache = nil
 	s.mu.Unlock()
 }
@@ -191,13 +204,95 @@ func (s *Server) cachedIndex() []SearchIndexEntry {
 	return s.indexCache
 }
 
-func (s *Server) navLinks() []navEntry {
-	index := s.cachedIndex()
-	nav := make([]navEntry, 0, len(index))
-	for _, e := range index {
-		nav = append(nav, navEntry{Path: e.Path, Title: e.Title})
+func (s *Server) navSections() []navSection {
+	s.mu.RLock()
+	nav := s.navCache
+	s.mu.RUnlock()
+	if nav != nil {
+		return nav
 	}
-	return nav
+
+	// Build the search index first (acquires + releases its own lock) so that
+	// the nav write lock below does not re-enter the mutex.
+	idx := s.cachedIndex()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.navCache == nil {
+		s.navCache = navFromIndex(s.cfg, idx)
+	}
+	return s.navCache
+}
+
+// navFromIndex parses index.md via wiki.ParseIndex for section headings and
+// links. Falls back to a single unnamed section built from the flat search
+// index when index.md is absent, unparseable, or contains no sections.
+func navFromIndex(cfg *config.Config, fallback []SearchIndexEntry) []navSection {
+	data, err := os.ReadFile(filepath.Join(cfg.WikiPath, "index.md"))
+	if err != nil {
+		return flatNavSection(fallback)
+	}
+	doc, err := wiki.ParseIndex(data, cfg)
+	if err != nil {
+		return flatNavSection(fallback)
+	}
+	var out []navSection
+	for _, sec := range doc.Sections {
+		if len(sec.Entries) == 0 {
+			continue
+		}
+		links := make([]navEntry, 0, len(sec.Entries))
+		for _, e := range sec.Entries {
+			links = append(links, navEntry{
+				Path:  strings.TrimSuffix(e.Path, ".md"),
+				Title: e.Title,
+			})
+		}
+		out = append(out, navSection{Title: sec.Title, Links: links})
+	}
+	if len(out) == 0 {
+		return flatNavSection(fallback)
+	}
+	return out
+}
+
+func flatNavSection(entries []SearchIndexEntry) []navSection {
+	links := make([]navEntry, len(entries))
+	for i, e := range entries {
+		links[i] = navEntry{Path: e.Path, Title: e.Title}
+	}
+	return []navSection{{Links: links}}
+}
+
+// cachedWikiTitle returns the wiki title (H1 from index.md), building and
+// caching it on first call. Cleared by InvalidateCache().
+func (s *Server) cachedWikiTitle() string {
+	s.mu.RLock()
+	t := s.titleCache
+	s.mu.RUnlock()
+	if t != "" {
+		return t
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.titleCache == "" {
+		s.titleCache = wikiTitle(s.cfg.WikiPath)
+	}
+	return s.titleCache
+}
+
+// wikiTitle reads the H1 from index.md as the wiki title. Falls back to "wiki".
+func wikiTitle(wikiPath string) string {
+	data, err := os.ReadFile(filepath.Join(wikiPath, "index.md"))
+	if err != nil {
+		return "wiki"
+	}
+	_, body := wiki.ParseFrontmatter(data)
+	if t := h1Title(body); t != "" {
+		return t
+	}
+	return "wiki"
 }
 
 // handlePage returns a handler that renders a fixed page (e.g. index.md).
@@ -240,8 +335,9 @@ func (s *Server) servePage(w http.ResponseWriter, r *http.Request, relPath strin
 	w.Header().Set("Last-Modified", cp.modTime.UTC().Format(http.TimeFormat))
 	data := pageData{
 		Title:       cp.page.Title,
+		WikiTitle:   s.cachedWikiTitle(),
 		ContentHTML: template.HTML(cp.page.HTML), // #nosec G203 — content is produced by our own markdown renderer
-		Nav:         s.navLinks(),
+		Nav:         s.navSections(),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmplPage.Execute(w, data); err != nil {
@@ -306,9 +402,10 @@ func (s *Server) cachedPageEntry(abs, relPath string) (*pageEntry, error) {
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	data := searchData{
-		Query:   q,
-		Results: Search(s.cachedIndex(), q),
-		Nav:     s.navLinks(),
+		WikiTitle: s.cachedWikiTitle(),
+		Query:     q,
+		Results:   Search(s.cachedIndex(), q),
+		Nav:       s.navSections(),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmplSrch.Execute(w, data); err != nil {

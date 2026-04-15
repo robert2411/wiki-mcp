@@ -263,6 +263,57 @@ func TestAutoRebuildFalse(t *testing.T) {
 	}
 }
 
+// TestNavFromIndexSections verifies AC#2: sidebar nav reflects index.md sections.
+func TestNavFromIndexSections(t *testing.T) {
+	wikiPath := t.TempDir()
+	indexMD := "# My Wiki\n\n## Pages\n\n### 🔬 Research\n- [Alpha](alpha.md) — first\n- [Beta](beta.md) — second\n\n### 🏷️ Entities\n- [Gamma](gamma.md) — third\n"
+	writeFile(t, wikiPath, "index.md", indexMD)
+	writeFile(t, wikiPath, "alpha.md", "# Alpha\n")
+	writeFile(t, wikiPath, "beta.md", "# Beta\n")
+	writeFile(t, wikiPath, "gamma.md", "# Gamma\n")
+	ts := testServer(t, wikiPath)
+	defer ts.Close()
+
+	body := httpGetBody(t, ts.URL+"/")
+	for _, want := range []string{"Research", "Entities", "/alpha", "/beta", "/gamma"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("nav: expected %q in body", want)
+		}
+	}
+}
+
+// TestNavFallbackToDirTree verifies AC#2 fallback: when index.md has no links,
+// nav falls back to a flat directory listing.
+func TestNavFallbackToDirTree(t *testing.T) {
+	wikiPath := t.TempDir()
+	writeFile(t, wikiPath, "index.md", "# My Wiki\n\nNo links here.\n")
+	writeFile(t, wikiPath, "notes.md", "# Notes\n")
+	ts := testServer(t, wikiPath)
+	defer ts.Close()
+
+	body := httpGetBody(t, ts.URL+"/")
+	if !strings.Contains(body, "notes") {
+		t.Errorf("fallback nav: expected 'notes' link in body")
+	}
+}
+
+// TestThemeJS verifies AC#6: theme.js is served from the embedded theme.
+func TestThemeJS(t *testing.T) {
+	wikiPath := t.TempDir()
+	writeFile(t, wikiPath, "index.md", "# Index\n")
+	ts := testServer(t, wikiPath)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/_theme/theme.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("GET /_theme/theme.js = %d, want 200", resp.StatusCode)
+	}
+}
+
 func httpGetBody(t *testing.T, url string) string {
 	t.Helper()
 	resp, err := http.Get(url) //nolint:noctx

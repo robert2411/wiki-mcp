@@ -3,19 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Title}} — wiki</title>
+  <title>{{.Title}} — {{.WikiTitle}}</title>
   <link rel="stylesheet" href="/_theme/style.css">
+  <script>
+    (function(){
+      var t=localStorage.getItem('dark');
+      document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    })();
+  </script>
 </head>
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <h1><a href="/">wiki</a></h1>
-    <form class="search-bar" action="/_search" method="get">
-      <input name="q" placeholder="Search…" value="{{.Query}}">
-      <button type="submit">Go</button>
+    <div class="sidebar-header">
+      <h1><a href="/">{{.WikiTitle}}</a></h1>
+      <button class="dark-toggle" onclick="toggleDark()" aria-label="Toggle dark mode">◑</button>
+    </div>
+    <form class="search-bar" action="/_search" method="get" autocomplete="off">
+      <input id="search-input" name="q" placeholder="Search…" value="{{.Query}}" aria-label="Search">
     </form>
+    <div id="search-results" class="search-dropdown" hidden></div>
     <nav>
-      {{range .Nav}}<a href="/{{.Path}}">{{.Title}}</a>
+      {{range .Nav}}
+        {{if .Title}}<div class="nav-section">{{.Title}}</div>{{end}}
+        {{range .Links}}<a href="/{{.Path}}">{{.Title}}</a>
+        {{end}}
       {{end}}
     </nav>
   </aside>
@@ -23,5 +35,6 @@
     {{.ContentHTML}}
   </main>
 </div>
+<script src="/_theme/theme.js"></script>
 </body>
 </html>
