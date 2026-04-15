@@ -3,6 +3,7 @@ package wiki
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/robertstevens/wiki-mcp/internal/config"
@@ -18,6 +19,18 @@ func RegisterTools(srv *server.Server) {
 	srv.RegisterTool(pageDeleteTool(), handlePageDelete(cfg))
 	srv.RegisterTool(pageListTool(), handlePageList(cfg))
 	srv.RegisterTool(pageMoveTool(), handlePageMove(cfg))
+
+	srv.RegisterTool(indexReadTool(), handleIndexRead(cfg))
+	srv.RegisterTool(indexUpsertEntryTool(), handleIndexUpsertEntry(cfg))
+	srv.RegisterTool(indexRefreshStatsTool(), handleIndexRefreshStats(cfg))
+
+	srv.RegisterTool(logAppendTool(), handleLogAppend(cfg))
+	srv.RegisterTool(logTailTool(), handleLogTail(cfg))
+
+	srv.RegisterTool(wikiSearchTool(), handleWikiSearch(cfg))
+	srv.RegisterTool(linksOutgoingTool(), handleLinksOutgoing(cfg))
+	srv.RegisterTool(linksIncomingTool(), handleLinksIncoming(cfg))
+	srv.RegisterTool(orphansTool(), handleOrphans(cfg))
 }
 
 // --- Tool definitions ---
@@ -171,5 +184,227 @@ func handlePageMove(cfg *config.Config) func(ctx context.Context, req mcp.CallTo
 		}
 
 		return mcp.NewToolResultText(fmt.Sprintf("page moved from %q to %q", oldPath, newPath)), nil
+	}
+}
+
+func indexReadTool() mcp.Tool {
+	return mcp.NewTool("index_read",
+		mcp.WithDescription("Read and parse index.md into structured form with sections and stats."),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func indexUpsertEntryTool() mcp.Tool {
+	return mcp.NewTool("index_upsert_entry",
+		mcp.WithDescription("Add or update a single entry in index.md. Updates summary if title+path match; otherwise appends within the section."),
+		mcp.WithString("section_key", mcp.Required(), mcp.Description("Section key (e.g. research, entities, concepts, infrastructure)")),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Page title")),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Relative path to the page")),
+		mcp.WithString("summary", mcp.Required(), mcp.Description("One-line summary for the entry")),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+	)
+}
+
+func indexRefreshStatsTool() mcp.Tool {
+	return mcp.NewTool("index_refresh_stats",
+		mcp.WithDescription("Recompute page count and last-updated date from disk and rewrite the Stats block in index.md."),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+	)
+}
+
+func handleIndexRead(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		doc, te := IndexRead(cfg)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+		return mcp.NewToolResultJSON(doc)
+	}
+}
+
+func handleIndexUpsertEntry(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		sectionKey, err := req.RequireString("section_key")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		title, err := req.RequireString("title")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		path, err := req.RequireString("path")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		summary, err := req.RequireString("summary")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+
+		if te := IndexUpsertEntry(cfg, sectionKey, title, path, summary); te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultText(fmt.Sprintf("entry %q upserted in section %q", title, sectionKey)), nil
+	}
+}
+
+func handleIndexRefreshStats(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if te := IndexRefreshStats(cfg); te != nil {
+			return toolErrorResult(te), nil
+		}
+		return mcp.NewToolResultText("index stats refreshed"), nil
+	}
+}
+
+func logAppendTool() mcp.Tool {
+	return mcp.NewTool("log_append",
+		mcp.WithDescription("Append an entry to log.md. Creates log.md from template if missing. Operation must be one of: ingest, query, lint."),
+		mcp.WithString("operation", mcp.Required(), mcp.Description("Log operation type: ingest, query, or lint")),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Entry title")),
+		mcp.WithString("body", mcp.Description("Entry body (markdown)")),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func logTailTool() mcp.Tool {
+	return mcp.NewTool("log_tail",
+		mcp.WithDescription("Return the last N log entries from log.md parsed as structured objects. Default N=10."),
+		mcp.WithNumber("n", mcp.Description("Number of entries to return (default 10)")),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func handleLogAppend(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		operation, err := req.RequireString("operation")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		title, err := req.RequireString("title")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		body := req.GetString("body", "")
+
+		if te := LogAppend(cfg, operation, title, body); te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultText(fmt.Sprintf("log entry appended: [%s] %s | %s", time.Now().Format("2006-01-02"), operation, title)), nil
+	}
+}
+
+func handleLogTail(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		n := int(req.GetFloat("n", 10))
+
+		entries, te := LogTail(cfg, n)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultJSON(entries)
+	}
+}
+
+func wikiSearchTool() mcp.Tool {
+	return mcp.NewTool("wiki_search",
+		mcp.WithDescription("Full-text search across wiki page bodies. Returns scored results with snippets."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("Search query (substring or regex)")),
+		mcp.WithNumber("limit", mcp.Description("Max results to return (default 20)")),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func linksOutgoingTool() mcp.Tool {
+	return mcp.NewTool("links_outgoing",
+		mcp.WithDescription("Return all outgoing links from a wiki page. Internal links include wikilinks and relative paths; external links include full URLs."),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Relative path to the page")),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func linksIncomingTool() mcp.Tool {
+	return mcp.NewTool("links_incoming",
+		mcp.WithDescription("Return all pages that link to a given wiki page (backlinks)."),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Relative path to the target page")),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func orphansTool() mcp.Tool {
+	return mcp.NewTool("orphans",
+		mcp.WithDescription("Return pages with zero incoming links (excluding index.md and log.md)."),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func handleWikiSearch(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		query, err := req.RequireString("query")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		limit := int(req.GetFloat("limit", 20))
+
+		results, te := WikiSearch(cfg, query, limit)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultJSON(results)
+	}
+}
+
+func handleLinksOutgoing(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		path, err := req.RequireString("path")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+
+		result, te := LinksOutgoing(cfg, path)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultJSON(result)
+	}
+}
+
+func handleLinksIncoming(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		path, err := req.RequireString("path")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+
+		backlinks, te := LinksIncoming(cfg, path)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultJSON(backlinks)
+	}
+}
+
+func handleOrphans(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		orphans, te := Orphans(cfg)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultJSON(orphans)
 	}
 }

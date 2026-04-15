@@ -14,6 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robertstevens/wiki-mcp/internal/wiki/linkgraph"
 )
 
 // Error codes returned in structured tool errors.
@@ -446,11 +447,28 @@ func rewriteMarkdownLinks(content, oldPath, newPath string) string {
 }
 
 // fixOutgoingLinks adjusts relative links in a moved page so they still point
-// to the same targets.
+// to the same targets. Uses linkgraph.ParseOutgoing to enumerate targets.
 func fixOutgoingLinks(content, oldRel, newRel string) string {
 	oldDir := filepath.Dir(oldRel)
 	newDir := filepath.Dir(newRel)
 	if oldDir == newDir {
+		return content
+	}
+
+	// Build a map of oldRelLink → newRelLink for all path-based outgoing links,
+	// then do a single regex pass to rewrite all of them at once.
+	rewrites := make(map[string]string)
+	for _, target := range linkgraph.ParseOutgoing(oldRel, content).Internal {
+		if !strings.HasSuffix(target, ".md") {
+			continue // wikilink titles reference by name, not path — no rewrite needed
+		}
+		oldLink, _ := filepath.Rel(oldDir, target)
+		newLink, _ := filepath.Rel(newDir, target)
+		if oldLink != newLink {
+			rewrites[filepath.ToSlash(oldLink)] = newLink
+		}
+	}
+	if len(rewrites) == 0 {
 		return content
 	}
 
@@ -459,15 +477,9 @@ func fixOutgoingLinks(content, oldRel, newRel string) string {
 		if len(subs) != 3 {
 			return match
 		}
-		linkPath := subs[2]
-		// Skip external links
-		if strings.Contains(linkPath, "://") {
-			return match
+		if newLink, ok := rewrites[filepath.ToSlash(filepath.Clean(subs[2]))]; ok {
+			return "[" + subs[1] + "](" + newLink + ")"
 		}
-		// Resolve target relative to old location, then compute new relative path
-		target := filepath.Join(oldDir, linkPath)
-		target = filepath.Clean(target)
-		newLink, _ := filepath.Rel(newDir, target)
-		return "[" + subs[1] + "](" + newLink + ")"
+		return match
 	})
 }
