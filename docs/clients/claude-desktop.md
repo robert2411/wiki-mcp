@@ -1,5 +1,7 @@
 # wiki-mcp + Claude Desktop
 
+> **See also:** [Claude Code](claude-code.md) | [MCP Inspector / dev harness](mcp-inspector.md)
+
 ## Configuration
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or
@@ -56,7 +58,7 @@ The full ingest workflow transcript is documented in [claude-code.md](claude-cod
 ## Quirks
 
 - **Restart required:** Claude Desktop does not hot-reload `claude_desktop_config.json`. Any config change requires a full restart.
-- **Prompt arg UI:** Claude Desktop renders prompt arguments as a form dialog before submission. `ingest` has an optional `hint` field; `query` has an optional `file_answer` field. Leave either blank to omit.
+- **Prompt arg UI:** Claude Desktop renders prompt arguments as a form dialog before submission. `ingest` has an optional `hint` field; `query` has an optional `file_answer` field; `lint` takes no arguments. Leave optional fields blank to omit.
 - **Resources not yet implemented:** The `wiki` server will show zero resources in the UI until TASK-11 lands.
 - **Binary must be in PATH or use absolute path:** Claude Desktop does not inherit the user's shell `PATH`. Always use an absolute path for `command`, or install the binary to `/usr/local/bin`.
 - **Tool approval dialogs:** Claude Desktop prompts for approval on first use of each tool per session. Click "Allow for this session" to suppress further prompts for that specific tool for the duration of the session. Destructive tools (`page_write`, `page_delete`, `page_move`) will prompt again on each new session.

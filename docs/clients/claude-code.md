@@ -1,5 +1,7 @@
 # wiki-mcp + Claude Code
 
+> **See also:** [Claude Desktop](claude-desktop.md) | [MCP Inspector / dev harness](mcp-inspector.md)
+
 ## Configuration
 
 ### Project-level (`.mcp.json` in repo root)
@@ -52,17 +54,18 @@ Add under the top-level `mcpServers` key:
 }
 ```
 
-## Verified surface (2026-04-15)
+## Verified surface (2026-04-16)
 
-**14 tools:**
+**17 tools:**
 `index_read`, `index_refresh_stats`, `index_upsert_entry`,
 `links_incoming`, `links_outgoing`,
 `log_append`, `log_tail`,
 `orphans`,
 `page_delete`, `page_list`, `page_move`, `page_read`, `page_write`,
+`source_fetch_url`, `source_list`, `source_pdf_text`,
 `wiki_search`
 
-**2 prompts:** `ingest`, `query`
+**3 prompts:** `ingest`, `lint`, `query`
 
 **Resources:** none yet (TASK-11)
 
