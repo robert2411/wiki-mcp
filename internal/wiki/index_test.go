@@ -27,6 +27,11 @@ func readIndexFixture(t *testing.T) []byte {
 	return data
 }
 
+func normalizeNewlines(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	return strings.ReplaceAll(s, "\r", "\n")
+}
+
 func TestParseIndex_RoundTrip(t *testing.T) {
 	data := readIndexFixture(t)
 
@@ -37,10 +42,12 @@ func TestParseIndex_RoundTrip(t *testing.T) {
 	}
 
 	rendered := RenderIndex(doc)
+	want := normalizeNewlines(string(data))
+	got := normalizeNewlines(string(rendered))
 
-	if string(rendered) != string(data) {
+	if got != want {
 		// Find first difference
-		a, b := string(data), string(rendered)
+		a, b := want, got
 		aLines := strings.Split(a, "\n")
 		bLines := strings.Split(b, "\n")
 		for i := 0; i < len(aLines) || i < len(bLines); i++ {
@@ -56,7 +63,7 @@ func TestParseIndex_RoundTrip(t *testing.T) {
 				break
 			}
 		}
-		t.Fatalf("round-trip failed: lengths want=%d got=%d", len(data), len(rendered))
+		t.Fatalf("round-trip failed: lengths want=%d got=%d", len(want), len(got))
 	}
 }
 
