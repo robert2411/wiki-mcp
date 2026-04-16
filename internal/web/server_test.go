@@ -53,7 +53,7 @@ func TestIndexPageRenders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET / = %d, want 200", resp.StatusCode)
 	}
@@ -70,7 +70,7 @@ func TestPageRenders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /entities/ollama = %d, want 200", resp.StatusCode)
 	}
@@ -86,7 +86,7 @@ func TestMissingPageReturns404(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("GET /nonexistent = %d, want 404", resp.StatusCode)
 	}
@@ -108,7 +108,7 @@ func TestPathTraversalReturns404(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET %s: %v", path, err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			t.Errorf("GET %s = 200, want non-200 (path traversal not blocked)", path)
 		}
@@ -126,7 +126,7 @@ func TestSearchReturnsMatches(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /_search?q=qwen = %d, want 200", resp.StatusCode)
 	}
@@ -143,7 +143,7 @@ func TestSearchIndexJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /_search_index.json = %d, want 200", resp.StatusCode)
 	}
@@ -170,7 +170,7 @@ func TestStyleCSS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /_theme/style.css = %d, want 200", resp.StatusCode)
 	}
@@ -226,7 +226,7 @@ func TestETagLastModified(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET / = %d, want 200", resp.StatusCode)
@@ -316,7 +316,7 @@ func TestThemeJS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("GET /_theme/theme.js = %d, want 200", resp.StatusCode)
 	}
@@ -328,7 +328,7 @@ func httpGetBody(t *testing.T, url string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var b strings.Builder
 	if _, err := io.Copy(&b, resp.Body); err != nil {
 		t.Fatal(err)
@@ -374,7 +374,7 @@ func TestGracefulShutdownNoLeaks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("server not reachable at %s: %v", addr, err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Trigger shutdown (simulates SIGINT/SIGTERM cancelling the root context).
 	cancel()

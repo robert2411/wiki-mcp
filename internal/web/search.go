@@ -85,28 +85,3 @@ func bodySnippet(body string, maxLen int) string {
 	}
 	return body[:maxLen] + "…"
 }
-
-// matchSnippet returns text around the first occurrence of query in body.
-func matchSnippet(body, lowerQuery string, window int) string {
-	lowerBody := strings.ToLower(body)
-	idx := strings.Index(lowerBody, lowerQuery)
-	if idx < 0 {
-		return bodySnippet(body, window)
-	}
-	start := idx - window/2
-	if start < 0 {
-		start = 0
-	}
-	end := start + window
-	if end > len(body) {
-		end = len(body)
-	}
-	snip := body[start:end]
-	if start > 0 {
-		snip = "…" + snip
-	}
-	if end < len(body) {
-		snip += "…"
-	}
-	return snip
-}

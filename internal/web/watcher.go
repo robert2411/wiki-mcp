@@ -27,7 +27,7 @@ func startWatcher(ctx context.Context, wikiPath string, logger *slog.Logger, onC
 
 	if err := addDirsRecursive(w, wikiPath); err != nil {
 		logger.Warn("watcher: failed to add dirs, falling back to polling", "err", err)
-		w.Close()
+		_ = w.Close()
 		go pollWatcher(ctx, wikiPath, logger, onChanged)
 		return
 	}
@@ -38,7 +38,7 @@ func startWatcher(ctx context.Context, wikiPath string, logger *slog.Logger, onC
 // runFsnotifyWatcher reads fsnotify events, debounces them, and calls
 // onChanged. New directories are added to the watcher automatically.
 func runFsnotifyWatcher(ctx context.Context, w *fsnotify.Watcher, logger *slog.Logger, onChanged func()) {
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	const debounce = 200 * time.Millisecond
 	var timer *time.Timer

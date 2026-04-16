@@ -46,12 +46,12 @@ type Server struct {
 	// mu guards renderer, indexCache, navCache, titleCache, and pageCache. All
 	// are rebuilt lazily on first use and nulled by InvalidateCache() when the
 	// file watcher detects changes.
-	mu          sync.RWMutex
-	renderer    *render.Renderer
-	indexCache  []SearchIndexEntry
-	navCache    []navSection
-	titleCache  string // empty = not yet loaded
-	pageCache   map[string]*pageEntry
+	mu         sync.RWMutex
+	renderer   *render.Renderer
+	indexCache []SearchIndexEntry
+	navCache   []navSection
+	titleCache string // empty = not yet loaded
+	pageCache  map[string]*pageEntry
 }
 
 // pageData is passed to page.html.

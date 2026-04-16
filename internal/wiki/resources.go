@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	pageURIPrefix   = "wiki://page/"
-	mimeMarkdown    = "text/markdown"
-	mimeJSON        = "application/json"
+	pageURIPrefix    = "wiki://page/"
+	mimeMarkdown     = "text/markdown"
+	mimeJSON         = "application/json"
 	maxPageResources = 500 // cap for list_resources page enumeration
 )
 

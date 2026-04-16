@@ -129,7 +129,9 @@ func TestContextCancellationShutdown(t *testing.T) {
 	// Give server moment to start, then cancel.
 	time.Sleep(50 * time.Millisecond)
 	cancel()
-	stdinW.Close()
+	if err := stdinW.Close(); err != nil {
+		t.Fatalf("close stdin pipe: %v", err)
+	}
 
 	start := time.Now()
 	select {
@@ -203,4 +205,3 @@ func TestBearerAuthMiddleware(t *testing.T) {
 		})
 	}
 }
-

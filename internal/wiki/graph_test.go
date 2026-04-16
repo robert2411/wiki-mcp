@@ -100,10 +100,10 @@ func TestLinksIncoming_ExistingWiki(t *testing.T) {
 
 func TestOrphans_SimpleFixture(t *testing.T) {
 	root := t.TempDir()
-	seedPage(t, root, "index.md", "[A](a.md)\n")  // index links to a.md
-	seedPage(t, root, "a.md", "# A\n")            // linked only from index → orphan
-	seedPage(t, root, "b.md", "[A](a.md)\n")      // b links to a
-	seedPage(t, root, "c.md", "# Standalone\n")   // no incoming links → orphan
+	seedPage(t, root, "index.md", "[A](a.md)\n") // index links to a.md
+	seedPage(t, root, "a.md", "# A\n")           // linked only from index → orphan
+	seedPage(t, root, "b.md", "[A](a.md)\n")     // b links to a
+	seedPage(t, root, "c.md", "# Standalone\n")  // no incoming links → orphan
 	cfg := testConfig(t, root)
 
 	orphans, te := Orphans(cfg)

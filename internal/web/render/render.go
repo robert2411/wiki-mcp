@@ -168,7 +168,7 @@ func h1FromFile(path string) string {
 	if err != nil {
 		return ""
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	limited, err := io.ReadAll(io.LimitReader(f, 8192))
 	if err != nil {
 		return ""
@@ -314,7 +314,7 @@ func (wr *wikilinkRenderer) renderWikilink(w util.BufWriter, _ []byte, node ast.
 type mdLinkTransformer struct{}
 
 func (t *mdLinkTransformer) Transform(doc *ast.Document, _ text.Reader, _ parser.Context) {
-	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+	_ = ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}

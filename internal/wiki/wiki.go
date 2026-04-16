@@ -54,10 +54,10 @@ type PageReadResult struct {
 
 // PageListEntry is one item in page_list results.
 type PageListEntry struct {
-	Path    string         `json:"path"`
-	Tags    []string       `json:"tags,omitempty"`
-	Updated string         `json:"updated,omitempty"`
-	Title   string         `json:"title,omitempty"`
+	Path    string   `json:"path"`
+	Tags    []string `json:"tags,omitempty"`
+	Updated string   `json:"updated,omitempty"`
+	Title   string   `json:"title,omitempty"`
 }
 
 // ParseFrontmatter splits a markdown file into YAML frontmatter and body.
@@ -119,7 +119,7 @@ func RenderFrontmatter(fm map[string]any, body string) []byte {
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
 	_ = enc.Encode(fm)
-	enc.Close()
+	_ = enc.Close()
 	buf.WriteString("---\n")
 	buf.WriteString(body)
 	return buf.Bytes()
@@ -333,8 +333,6 @@ func PageList(cfg *config.Config, filter PageListFilter) ([]PageListEntry, *Tool
 }
 
 var (
-	// [[Title]] pattern
-	wikiLinkRe = regexp.MustCompile(`\[\[([^\]]+)\]\]`)
 	// [text](path) pattern — captures text and path separately
 	mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`)
 )

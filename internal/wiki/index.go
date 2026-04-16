@@ -29,9 +29,9 @@ type IndexSection struct {
 
 // IndexStats holds parsed stats from the ## Stats block.
 type IndexStats struct {
-	SourcesIngested string `json:"sources_ingested,omitempty"`
-	WikiPages       string `json:"wiki_pages,omitempty"`
-	LastUpdated     string `json:"last_updated,omitempty"`
+	SourcesIngested string   `json:"sources_ingested,omitempty"`
+	WikiPages       string   `json:"wiki_pages,omitempty"`
+	LastUpdated     string   `json:"last_updated,omitempty"`
 	Extra           []string `json:"-"` // any unrecognised stats lines
 }
 
@@ -59,7 +59,7 @@ func ParseIndex(data []byte, cfg *config.Config) (*IndexDocument, error) {
 
 	// States: preamble -> preSections -> sections -> interBlock -> stats
 	const (
-		stPreamble    = iota
+		stPreamble = iota
 		stPreSections
 		stSections
 		stInterBlock
@@ -232,15 +232,13 @@ func RenderIndex(doc *IndexDocument) []byte {
 		b.WriteString(doc.PreSectionContent)
 	}
 
-	for i, sec := range doc.Sections {
+	for _, sec := range doc.Sections {
 		b.WriteString(sec.HeaderLine + "\n")
 		for _, e := range sec.Entries {
-			b.WriteString(fmt.Sprintf("- [%s](%s) — %s\n", e.Title, e.Path, e.Summary))
+			_, _ = fmt.Fprintf(&b, "- [%s](%s) — %s\n", e.Title, e.Path, e.Summary)
 		}
 		if sec.Trailing != "" {
 			b.WriteString(sec.Trailing)
-		} else if i < len(doc.Sections)-1 {
-			// No trailing stored means no blank line — don't add one
 		}
 	}
 

@@ -125,7 +125,9 @@ func TestLogAppend_Basic(t *testing.T) {
 
 func TestLogAppend_InvalidOperation(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "log.md"), []byte(logTemplate), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "log.md"), []byte(logTemplate), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	cfg := logTestConfig(t, dir)
 
 	te := LogAppend(cfg, "delete", "Bad op", "")
@@ -174,7 +176,9 @@ func TestLogAppend_CreatesFileFromTemplate(t *testing.T) {
 
 func TestLogAppend_ReadOnly(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "log.md"), []byte(logTemplate), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "log.md"), []byte(logTemplate), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	cfg := logTestConfig(t, dir)
 	cfg.Safety.ReadOnly = true
 

@@ -217,9 +217,15 @@ func TestIndexRefreshStats(t *testing.T) {
 	}
 
 	// Create a few test pages
-	os.MkdirAll(filepath.Join(dir, "entities"), 0o755)
-	os.WriteFile(filepath.Join(dir, "entities", "test1.md"), []byte("# Test 1"), 0o644)
-	os.WriteFile(filepath.Join(dir, "entities", "test2.md"), []byte("# Test 2"), 0o644)
+	if err := os.MkdirAll(filepath.Join(dir, "entities"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "entities", "test1.md"), []byte("# Test 1"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "entities", "test2.md"), []byte("# Test 2"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := indexTestConfig(t, dir)
 
@@ -263,7 +269,9 @@ func TestIndexRefreshStats(t *testing.T) {
 
 func TestIndexUpsertEntry_ReadOnly(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Index\n## Pages\n## Stats\n"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Index\n## Pages\n## Stats\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := indexTestConfig(t, dir)
 	cfg.Safety.ReadOnly = true
@@ -279,7 +287,9 @@ func TestIndexUpsertEntry_ReadOnly(t *testing.T) {
 
 func TestIndexRefreshStats_ReadOnly(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Index\n## Pages\n## Stats\n"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "index.md"), []byte("# Index\n## Pages\n## Stats\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := indexTestConfig(t, dir)
 	cfg.Safety.ReadOnly = true

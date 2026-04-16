@@ -112,7 +112,7 @@ func FetchURL(sourcesPath, rawURL, slug string) (string, *ToolError) {
 	if err != nil {
 		return "", newToolError(ErrCodeInternal, fmt.Sprintf("fetch %q: %v", rawURL, err))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -171,7 +171,7 @@ func pdfViaLibrary(abs string) (*PDFResult, *ToolError) {
 	if err != nil {
 		return nil, newToolError(ErrCodeInternal, fmt.Sprintf("open PDF: %v", err))
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	pageCount := r.NumPage()
 	plainReader, err := r.GetPlainText()

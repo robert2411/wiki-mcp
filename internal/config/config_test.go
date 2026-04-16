@@ -10,9 +10,18 @@ import (
 
 func chdirTemp(t *testing.T, dir string) {
 	t.Helper()
-	origDir, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(origDir) })
-	os.Chdir(dir)
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if chdirErr := os.Chdir(origDir); chdirErr != nil {
+			t.Errorf("restore cwd: %v", chdirErr)
+		}
+	})
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir to temp dir: %v", err)
+	}
 }
 
 func TestDefaults(t *testing.T) {
@@ -75,7 +84,9 @@ func TestMissingTOMLFileFallsThrough(t *testing.T) {
 	chdirTemp(t, dir)
 
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	wp := wikiDir
 	_, err := Load(Flags{WikiPath: &wp})
 	if err != nil {
@@ -86,7 +97,9 @@ func TestMissingTOMLFileFallsThrough(t *testing.T) {
 func TestEnvOverridesFile(t *testing.T) {
 	dir := t.TempDir()
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	tomlContent := `
 wiki_path = "` + wikiDir + `"
@@ -95,7 +108,9 @@ wiki_path = "` + wikiDir + `"
 port = 8080
 `
 	tomlPath := filepath.Join(dir, "wiki-mcp.toml")
-	os.WriteFile(tomlPath, []byte(tomlContent), 0o644)
+	if err := os.WriteFile(tomlPath, []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir)
 
@@ -113,7 +128,9 @@ port = 8080
 func TestFlagsOverrideEnv(t *testing.T) {
 	dir := t.TempDir()
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir)
 
@@ -154,7 +171,9 @@ func TestWikiPathRequired(t *testing.T) {
 func TestInvalidTOML(t *testing.T) {
 	dir := t.TempDir()
 	bad := filepath.Join(dir, "bad.toml")
-	os.WriteFile(bad, []byte("not valid [[ toml"), 0o644)
+	if err := os.WriteFile(bad, []byte("not valid [[ toml"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir)
 
@@ -173,7 +192,9 @@ func TestEnvConfigFileNotFound(t *testing.T) {
 	// (loadTOMLFile returns nil for missing files)
 	t.Setenv("WIKI_MCP_CONFIG", filepath.Join(dir, "nonexistent.toml"))
 	wp := filepath.Join(dir, "wiki")
-	os.MkdirAll(wp, 0o755)
+	if err := os.MkdirAll(wp, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	_, err := Load(Flags{WikiPath: &wp})
 	if err != nil {
 		t.Fatalf("Load should succeed when WIKI_MCP_CONFIG points to missing file: %v", err)
@@ -204,16 +225,16 @@ func TestResolveWikiPath(t *testing.T) {
 		want    string
 	}{
 		{
-			name: "simple subpath",
-			rel:  "pages/intro.md",
+			name:    "simple subpath",
+			rel:     "pages/intro.md",
 			confine: true,
-			want: "/home/user/wiki/pages/intro.md",
+			want:    "/home/user/wiki/pages/intro.md",
 		},
 		{
-			name: "dot path",
-			rel:  "./pages/../pages/intro.md",
+			name:    "dot path",
+			rel:     "./pages/../pages/intro.md",
 			confine: true,
-			want: "/home/user/wiki/pages/intro.md",
+			want:    "/home/user/wiki/pages/intro.md",
 		},
 		{
 			name:    "traversal blocked",
@@ -228,22 +249,22 @@ func TestResolveWikiPath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "traversal allowed when confine off",
-			rel:  "../etc/passwd",
+			name:    "traversal allowed when confine off",
+			rel:     "../etc/passwd",
 			confine: false,
-			want: "/home/user/etc/passwd",
+			want:    "/home/user/etc/passwd",
 		},
 		{
-			name: "root itself",
-			rel:  ".",
+			name:    "root itself",
+			rel:     ".",
 			confine: true,
-			want: "/home/user/wiki",
+			want:    "/home/user/wiki",
 		},
 		{
-			name: "empty rel",
-			rel:  "",
+			name:    "empty rel",
+			rel:     "",
 			confine: true,
-			want: "/home/user/wiki",
+			want:    "/home/user/wiki",
 		},
 	}
 
@@ -288,7 +309,9 @@ func TestMustMutate(t *testing.T) {
 func TestSourcesPathDefault(t *testing.T) {
 	dir := t.TempDir()
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir)
 
@@ -308,14 +331,20 @@ func TestXDGConfigPath(t *testing.T) {
 	dir := t.TempDir()
 	xdgDir := filepath.Join(dir, "xdg")
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
-	os.MkdirAll(filepath.Join(xdgDir, "wiki-mcp"), 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(xdgDir, "wiki-mcp"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	toml := `wiki_path = "` + wikiDir + `"
 [web]
 port = 4444
 `
-	os.WriteFile(filepath.Join(xdgDir, "wiki-mcp", "config.toml"), []byte(toml), 0o644)
+	if err := os.WriteFile(filepath.Join(xdgDir, "wiki-mcp", "config.toml"), []byte(toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir) // no CWD file
 
@@ -333,7 +362,9 @@ port = 4444
 func TestEnvScalarOverrides(t *testing.T) {
 	dir := t.TempDir()
 	wikiDir := filepath.Join(dir, "wiki")
-	os.MkdirAll(wikiDir, 0o755)
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	chdirTemp(t, dir)
 
@@ -364,4 +395,3 @@ func TestEnvScalarOverrides(t *testing.T) {
 		t.Error("ConfineToWikiPath should be false")
 	}
 }
-
