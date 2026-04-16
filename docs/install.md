@@ -141,80 +141,13 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 
 ## Configuration
 
-### Discovery order
-
-wiki-mcp looks for its config file in this order (first match wins):
-
-1. `--config <path>` CLI flag
-2. `WIKI_MCP_CONFIG` environment variable
-3. `$XDG_CONFIG_HOME/wiki-mcp/config.toml` (falls back to `~/.config/wiki-mcp/config.toml`)
-4. `./wiki-mcp.toml` in the current working directory
-5. Built-in defaults — **`wiki_path` has no default and must be set** or the server exits with an error.
-
-Individual fields can also be set via environment variables:
-
-| Env var              | Config key       |
-|----------------------|------------------|
-| `WIKI_MCP_WIKI_PATH` | `wiki_path`      |
-| `WIKI_MCP_WEB_PORT`  | `web.port`       |
-| `WIKI_MCP_CONFIG`    | *(path override)*|
-
-CLI flags and env vars take precedence over the config file.
-
----
-
-### Minimal config
-
-Create `~/.config/wiki-mcp/config.toml` (or `./wiki-mcp.toml`):
+The only required field is `wiki_path`. Create `~/.config/wiki-mcp/config.toml` (or `./wiki-mcp.toml`):
 
 ```toml
 wiki_path = "/home/yourname/Documents/wiki"
 ```
 
-That is the only required field.
-
----
-
-### Full config reference
-
-```toml
-# Required. Absolute path to the wiki root directory.
-wiki_path = "/home/yourname/Documents/wiki"
-
-# Optional. Where source files live. Defaults to <wiki_path>/../sources.
-sources_path = "/home/yourname/Documents/sources"
-
-[web]
-# Built-in read-only web server.
-enabled = true            # default false
-port = 9000               # default 9000
-bind = "127.0.0.1"        # default localhost-only
-theme = "default"         # "default" | "minimal" | path to custom template dir
-auto_rebuild = true       # default true — re-renders on file change
-
-[index]
-# Section order in index.md. Custom sections appended in first-seen order.
-sections = [
-  { key = "research",       title = "🔬 Research" },
-  { key = "entities",       title = "🏷️ Entities" },
-  { key = "concepts",       title = "💡 Concepts" },
-  { key = "infrastructure", title = "🏗️ Infrastructure" },
-]
-
-[log]
-# Log entry date format. Default ISO 8601.
-date_format = "%Y-%m-%d"
-
-[links]
-# How tools write links. Reading always accepts both styles.
-# "obsidian" -> [[Title]]  |  "markdown" -> [Title](path)  |  "preserve" -> match existing page style
-style = "preserve"
-
-[safety]
-read_only = false             # If true, all mutating tools refuse.
-confine_to_wiki_path = true   # Reject paths outside wiki_path / sources_path.
-max_page_bytes = 1048576      # 1 MiB default.
-```
+For the full config reference — all TOML keys, environment variables, and CLI flags — see **[docs/config.md](config.md)**.
 
 ---
 

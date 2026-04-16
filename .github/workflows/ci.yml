@@ -19,6 +19,17 @@ jobs:
         with:
           version: latest
 
+  link-check:
+    name: Link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check intra-doc links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress README.md 'docs/**/*.md'
+          fail: true
+
   test:
     name: Test (${{ matrix.go }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
