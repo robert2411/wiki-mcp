@@ -24,11 +24,18 @@ type IndexSection struct {
 
 // WebConfig controls the built-in web server.
 type WebConfig struct {
-	Enabled      bool   `toml:"enabled"`
-	Port         int    `toml:"port"`
-	Bind         string `toml:"bind"`
-	Theme        string `toml:"theme"`
-	AutoRebuild  bool   `toml:"auto_rebuild"`
+	Enabled     bool   `toml:"enabled"`
+	Port        int    `toml:"port"`
+	Bind        string `toml:"bind"`
+	Theme       string `toml:"theme"`
+	AutoRebuild bool   `toml:"auto_rebuild"`
+}
+
+// MCPConfig controls the HTTP-based MCP transport (streamable-HTTP, MCP 2025-03 spec).
+type MCPConfig struct {
+	Port      int    `toml:"port"`
+	Bind      string `toml:"bind"`
+	AuthToken string `toml:"auth_token"`
 }
 
 // IndexConfig controls index.md rendering.
@@ -55,12 +62,13 @@ type SafetyConfig struct {
 
 // Config is the top-level configuration struct.
 type Config struct {
-	WikiPath    string      `toml:"wiki_path"`
-	SourcesPath string      `toml:"sources_path"`
-	Web         WebConfig   `toml:"web"`
-	Index       IndexConfig `toml:"index"`
-	Log         LogConfig   `toml:"log"`
-	Links       LinksConfig `toml:"links"`
+	WikiPath    string       `toml:"wiki_path"`
+	SourcesPath string       `toml:"sources_path"`
+	Web         WebConfig    `toml:"web"`
+	MCP         MCPConfig    `toml:"mcp"`
+	Index       IndexConfig  `toml:"index"`
+	Log         LogConfig    `toml:"log"`
+	Links       LinksConfig  `toml:"links"`
 	Safety      SafetyConfig `toml:"safety"`
 }
 
@@ -71,6 +79,8 @@ type Flags struct {
 	WikiPath   *string
 	Port       *int
 	Bind       *string
+	MCPPort    *int
+	AuthToken  *string
 }
 
 // Defaults returns a Config populated with built-in defaults.
@@ -81,6 +91,10 @@ func Defaults() Config {
 			Bind:        "127.0.0.1",
 			Theme:       "default",
 			AutoRebuild: true,
+		},
+		MCP: MCPConfig{
+			Port: 8765,
+			Bind: "127.0.0.1",
 		},
 		Index: IndexConfig{
 			Sections: []IndexSection{
@@ -147,6 +161,13 @@ func Load(flags Flags) (*Config, error) {
 	}
 	if flags.Bind != nil {
 		cfg.Web.Bind = *flags.Bind
+		cfg.MCP.Bind = *flags.Bind
+	}
+	if flags.MCPPort != nil {
+		cfg.MCP.Port = *flags.MCPPort
+	}
+	if flags.AuthToken != nil {
+		cfg.MCP.AuthToken = *flags.AuthToken
 	}
 
 	if err := validate(&cfg); err != nil {
@@ -208,6 +229,9 @@ func applyEnvOverrides(cfg *Config) {
 	envInt("WIKI_MCP_WEB_PORT", &cfg.Web.Port)
 	envStr("WIKI_MCP_WEB_BIND", &cfg.Web.Bind)
 	envStr("WIKI_MCP_WEB_THEME", &cfg.Web.Theme)
+	envInt("WIKI_MCP_MCP_PORT", &cfg.MCP.Port)
+	envStr("WIKI_MCP_MCP_BIND", &cfg.MCP.Bind)
+	envStr("WIKI_MCP_MCP_AUTH_TOKEN", &cfg.MCP.AuthToken)
 	envStr("WIKI_MCP_LINKS_STYLE", &cfg.Links.Style)
 	envBool("WIKI_MCP_SAFETY_READ_ONLY", &cfg.Safety.ReadOnly)
 	envBool("WIKI_MCP_SAFETY_CONFINE", &cfg.Safety.ConfineToWikiPath)

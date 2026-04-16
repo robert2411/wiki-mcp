@@ -24,13 +24,20 @@ var (
 	date    = "unknown"
 )
 
+const (
+	transportStdio = "stdio"
+	transportSSE   = "sse"
+)
+
 func main() {
 	showVersion := flag.Bool("version", false, "print version and exit")
 	configFile := flag.String("config", "", "path to TOML config file")
 	wikiPath := flag.String("wiki-path", "", "path to the wiki directory")
-	port := flag.Int("port", 0, "HTTP listen port")
-	bind := flag.String("bind", "", "HTTP bind address")
-	transport := flag.String("transport", "stdio", "transport mode: stdio or sse")
+	port := flag.Int("port", 0, "web UI HTTP listen port")
+	bind := flag.String("bind", "", "bind address for MCP HTTP transport (and web UI)")
+	mcpPort := flag.Int("mcp-port", 0, "MCP HTTP transport listen port (streamable-http, used with --transport sse)")
+	authToken := flag.String("auth-token", "", "bearer token required for MCP HTTP transport requests")
+	transport := flag.String("transport", transportStdio, "transport mode: stdio or sse")
 	serve := flag.Bool("serve", false, "enable the web UI (sets Web.Enabled=true)")
 	serveOnly := flag.Bool("serve-only", false, "run web UI only (implies --serve), no MCP stdio transport")
 
@@ -47,16 +54,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	if !*serveOnly {
-		if *transport == "sse" {
-			fmt.Fprintln(os.Stderr, server.ErrSSENotImplemented)
-			os.Exit(1)
-		}
-
-		if *transport != "stdio" {
-			fmt.Fprintf(os.Stderr, "error: unknown transport %q (valid: stdio, sse)\n", *transport)
-			os.Exit(1)
-		}
+	if !*serveOnly && *transport != transportStdio && *transport != transportSSE {
+		fmt.Fprintf(os.Stderr, "error: unknown transport %q (valid: stdio, sse)\n", *transport)
+		os.Exit(1)
 	}
 
 	// Collect only explicitly-set flags into the Flags struct.
@@ -71,6 +71,10 @@ func main() {
 			flags.Port = port
 		case "bind":
 			flags.Bind = bind
+		case "mcp-port":
+			flags.MCPPort = mcpPort
+		case "auth-token":
+			flags.AuthToken = authToken
 		}
 	})
 
@@ -99,9 +103,15 @@ func main() {
 	g, gctx := errgroup.WithContext(ctx)
 
 	if !*serveOnly {
-		g.Go(func() error {
-			return mcpSrv.RunStdio(gctx, os.Stdin, os.Stdout)
-		})
+		if *transport == transportSSE {
+			g.Go(func() error {
+				return mcpSrv.RunStreamableHTTP(gctx)
+			})
+		} else {
+			g.Go(func() error {
+				return mcpSrv.RunStdio(gctx, os.Stdin, os.Stdout)
+			})
+		}
 	}
 
 	if cfg.Web.Enabled {

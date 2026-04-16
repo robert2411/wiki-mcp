@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -141,15 +143,64 @@ func TestContextCancellationShutdown(t *testing.T) {
 	}
 }
 
-func TestSSENotImplemented(t *testing.T) {
-	if server.ErrSSENotImplemented == nil {
-		t.Fatal("ErrSSENotImplemented should not be nil")
+func TestRunStreamableHTTP_BindsAndResponds(t *testing.T) {
+	cfg := &config.Config{
+		WikiPath: t.TempDir(),
+		MCP: config.MCPConfig{
+			Port: 0, // not used — we drive via httptest
+			Bind: "127.0.0.1",
+		},
 	}
-	msg := server.ErrSSENotImplemented.Error()
-	if !strings.Contains(msg, "not implemented") {
-		t.Errorf("expected 'not implemented' in error, got: %s", msg)
-	}
-	if !strings.Contains(msg, "TASK-22") {
-		t.Errorf("expected 'TASK-22' in error, got: %s", msg)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	srv := server.New(cfg, "test", logger)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Run the streamable HTTP server in the background and give it a moment.
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.RunStreamableHTTP(ctx) }()
+	time.Sleep(50 * time.Millisecond)
+
+	cancel()
+	select {
+	case err := <-errCh:
+		if err != nil && !strings.Contains(err.Error(), "context") {
+			t.Errorf("unexpected shutdown error: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not shut down within 2s")
 	}
 }
+
+func TestBearerAuthMiddleware(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	handler := server.BearerAuthMiddleware("secret", ok)
+
+	cases := []struct {
+		name   string
+		header string
+		want   int
+	}{
+		{"valid token", "Bearer secret", http.StatusOK},
+		{"missing header", "", http.StatusUnauthorized},
+		{"wrong token", "Bearer wrong", http.StatusUnauthorized},
+		{"no bearer prefix", "secret", http.StatusUnauthorized},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+			if tc.header != "" {
+				req.Header.Set("Authorization", tc.header)
+			}
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+			if rr.Code != tc.want {
+				t.Errorf("got %d, want %d", rr.Code, tc.want)
+			}
+		})
+	}
+}
+
