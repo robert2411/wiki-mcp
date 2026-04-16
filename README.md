@@ -8,12 +8,17 @@ Personal wiki server with MCP (Model Context Protocol) integration.
 # Homebrew (macOS/Linux)
 brew install robertstevens/tap/wiki-mcp
 
-# One-line install
+# One-line install (macOS/Linux)
 curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/install.sh | sh
 
-# Go
+# Docker
+docker pull ghcr.io/robertstevens/wiki-mcp:latest
+
+# Go (head-of-main)
 go install github.com/robertstevens/wiki-mcp/cmd/wiki-mcp@latest
 ```
+
+Direct binary downloads and Windows instructions: see [docs/install.md](docs/install.md).
 
 ## Usage
 
@@ -21,4 +26,4 @@ go install github.com/robertstevens/wiki-mcp/cmd/wiki-mcp@latest
 wiki-mcp --wiki-path /path/to/wiki
 ```
 
-See [documentation](https://github.com/robertstevens/wiki-mcp) for full configuration options.
+See [docs/install.md](docs/install.md) for full installation options, configuration reference, multi-PC setup, and troubleshooting.
