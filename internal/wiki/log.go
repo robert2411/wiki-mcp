@@ -116,6 +116,8 @@ func LogTail(cfg *config.Config, n int) ([]LogEntry, *ToolError) {
 
 // parseLogEntries splits log.md content into LogEntry values.
 func parseLogEntries(content string) []LogEntry {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
 	lines := strings.Split(content, "\n")
 
 	var entries []LogEntry

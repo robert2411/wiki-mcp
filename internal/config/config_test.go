@@ -51,7 +51,7 @@ func TestLoadFromTOMLFile(t *testing.T) {
 	}
 
 	tomlContent := `
-wiki_path = "` + wikiDir + `"
+wiki_path = "` + filepath.ToSlash(wikiDir) + `"
 
 [web]
 port = 8080
@@ -102,7 +102,7 @@ func TestEnvOverridesFile(t *testing.T) {
 	}
 
 	tomlContent := `
-wiki_path = "` + wikiDir + `"
+wiki_path = "` + filepath.ToSlash(wikiDir) + `"
 
 [web]
 port = 8080
@@ -216,7 +216,7 @@ func TestConfigFlagFileNotFound(t *testing.T) {
 }
 
 func TestResolveWikiPath(t *testing.T) {
-	root := "/home/user/wiki"
+	root := filepath.Join("home", "user", "wiki")
 	tests := []struct {
 		name    string
 		rel     string
@@ -228,43 +228,43 @@ func TestResolveWikiPath(t *testing.T) {
 			name:    "simple subpath",
 			rel:     "pages/intro.md",
 			confine: true,
-			want:    "/home/user/wiki/pages/intro.md",
+			want:    filepath.Join(root, "pages", "intro.md"),
 		},
 		{
 			name:    "dot path",
 			rel:     "./pages/../pages/intro.md",
 			confine: true,
-			want:    "/home/user/wiki/pages/intro.md",
+			want:    filepath.Join(root, "pages", "intro.md"),
 		},
 		{
 			name:    "traversal blocked",
-			rel:     "../etc/passwd",
+			rel:     filepath.Join("..", "etc", "passwd"),
 			confine: true,
 			wantErr: true,
 		},
 		{
 			name:    "traversal with dot segments",
-			rel:     "pages/../../etc/passwd",
+			rel:     filepath.Join("pages", "..", "..", "etc", "passwd"),
 			confine: true,
 			wantErr: true,
 		},
 		{
 			name:    "traversal allowed when confine off",
-			rel:     "../etc/passwd",
+			rel:     filepath.Join("..", "etc", "passwd"),
 			confine: false,
-			want:    "/home/user/etc/passwd",
+			want:    filepath.Clean(filepath.Join(root, "..", "etc", "passwd")),
 		},
 		{
 			name:    "root itself",
 			rel:     ".",
 			confine: true,
-			want:    "/home/user/wiki",
+			want:    root,
 		},
 		{
 			name:    "empty rel",
 			rel:     "",
 			confine: true,
-			want:    "/home/user/wiki",
+			want:    root,
 		},
 	}
 
@@ -338,7 +338,7 @@ func TestXDGConfigPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	toml := `wiki_path = "` + wikiDir + `"
+	toml := `wiki_path = "` + filepath.ToSlash(wikiDir) + `"
 [web]
 port = 4444
 `

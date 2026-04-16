@@ -52,7 +52,8 @@ var sectionHeaderRe = regexp.MustCompile(`^### .+$`)
 
 // ParseIndex parses index.md content into an IndexDocument.
 func ParseIndex(data []byte, cfg *config.Config) (*IndexDocument, error) {
-	content := string(data)
+	content := strings.ReplaceAll(string(data), "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
 	lines := strings.Split(content, "\n")
 
 	doc := &IndexDocument{}

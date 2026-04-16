@@ -407,6 +407,8 @@ func PageMove(cfg *config.Config, oldRel, newRel string) *ToolError {
 		pageDir := filepath.Dir(pageRel)
 		oldRelFromPage, _ := filepath.Rel(pageDir, oldRel)
 		newRelFromPage, _ := filepath.Rel(pageDir, newRel)
+		oldRelFromPage = filepath.ToSlash(oldRelFromPage)
+		newRelFromPage = filepath.ToSlash(newRelFromPage)
 
 		result = rewriteMarkdownLinks(result, oldRelFromPage, newRelFromPage)
 
@@ -438,7 +440,7 @@ func rewriteMarkdownLinks(content, oldPath, newPath string) string {
 		}
 		linkPath := subs[2]
 		if filepath.Clean(linkPath) == filepath.Clean(oldPath) {
-			return "[" + subs[1] + "](" + newPath + ")"
+			return "[" + subs[1] + "](" + filepath.ToSlash(newPath) + ")"
 		}
 		return match
 	})
@@ -463,7 +465,7 @@ func fixOutgoingLinks(content, oldRel, newRel string) string {
 		oldLink, _ := filepath.Rel(oldDir, target)
 		newLink, _ := filepath.Rel(newDir, target)
 		if oldLink != newLink {
-			rewrites[filepath.ToSlash(oldLink)] = newLink
+			rewrites[filepath.ToSlash(oldLink)] = filepath.ToSlash(newLink)
 		}
 	}
 	if len(rewrites) == 0 {
