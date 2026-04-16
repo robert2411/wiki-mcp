@@ -18,15 +18,19 @@ func indexTestConfig(t *testing.T, wikiPath string) *config.Config {
 	return &cfg
 }
 
-func TestParseIndex_RoundTrip(t *testing.T) {
-	// Use the real existing wiki index.md
-	src := filepath.Join("..", "..", "existing", "wiki", "index.md")
-	data, err := os.ReadFile(src)
+func readIndexFixture(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", "index.md"))
 	if err != nil {
-		t.Fatalf("cannot read existing index.md: %v", err)
+		t.Fatalf("cannot read test fixture index.md: %v", err)
 	}
+	return data
+}
 
-	cfg := indexTestConfig(t, filepath.Join("..", "..", "existing", "wiki"))
+func TestParseIndex_RoundTrip(t *testing.T) {
+	data := readIndexFixture(t)
+
+	cfg := indexTestConfig(t, "testdata")
 	doc, parseErr := ParseIndex(data, cfg)
 	if parseErr != nil {
 		t.Fatalf("ParseIndex failed: %v", parseErr)
@@ -57,13 +61,9 @@ func TestParseIndex_RoundTrip(t *testing.T) {
 }
 
 func TestParseIndex_Sections(t *testing.T) {
-	src := filepath.Join("..", "..", "existing", "wiki", "index.md")
-	data, err := os.ReadFile(src)
-	if err != nil {
-		t.Fatalf("cannot read existing index.md: %v", err)
-	}
+	data := readIndexFixture(t)
 
-	cfg := indexTestConfig(t, filepath.Join("..", "..", "existing", "wiki"))
+	cfg := indexTestConfig(t, "testdata")
 	doc, parseErr := ParseIndex(data, cfg)
 	if parseErr != nil {
 		t.Fatalf("ParseIndex failed: %v", parseErr)
@@ -93,11 +93,7 @@ func TestParseIndex_Sections(t *testing.T) {
 
 func TestIndexUpsertEntry_UpdateExisting(t *testing.T) {
 	dir := t.TempDir()
-	src := filepath.Join("..", "..", "existing", "wiki", "index.md")
-	data, err := os.ReadFile(src)
-	if err != nil {
-		t.Fatalf("cannot read existing index.md: %v", err)
-	}
+	data := readIndexFixture(t)
 	if err := os.WriteFile(filepath.Join(dir, "index.md"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -134,11 +130,7 @@ func TestIndexUpsertEntry_UpdateExisting(t *testing.T) {
 
 func TestIndexUpsertEntry_AppendNew(t *testing.T) {
 	dir := t.TempDir()
-	src := filepath.Join("..", "..", "existing", "wiki", "index.md")
-	data, err := os.ReadFile(src)
-	if err != nil {
-		t.Fatalf("cannot read existing index.md: %v", err)
-	}
+	data := readIndexFixture(t)
 	if err := os.WriteFile(filepath.Join(dir, "index.md"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -219,11 +211,7 @@ func TestIndexUpsertEntry_NewSection(t *testing.T) {
 
 func TestIndexRefreshStats(t *testing.T) {
 	dir := t.TempDir()
-	src := filepath.Join("..", "..", "existing", "wiki", "index.md")
-	data, err := os.ReadFile(src)
-	if err != nil {
-		t.Fatalf("cannot read existing index.md: %v", err)
-	}
+	data := readIndexFixture(t)
 	if err := os.WriteFile(filepath.Join(dir, "index.md"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}

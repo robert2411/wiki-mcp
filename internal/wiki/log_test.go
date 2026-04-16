@@ -18,24 +18,26 @@ func logTestConfig(t *testing.T, wikiPath string) *config.Config {
 	return &cfg
 }
 
-func TestLogTail_ExistingLog(t *testing.T) {
-	src := filepath.Join("..", "..", "existing", "wiki", "log.md")
-	data, err := os.ReadFile(src)
+func readLogFixture(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", "log.md"))
 	if err != nil {
-		t.Fatalf("cannot read existing log.md: %v", err)
+		t.Fatalf("cannot read test fixture log.md: %v", err)
 	}
+	return data
+}
 
-	cfg := logTestConfig(t, filepath.Join("..", "..", "existing", "wiki"))
-	_ = data
+func TestLogTail_ExistingLog(t *testing.T) {
+	cfg := logTestConfig(t, "testdata")
 
 	entries, te := LogTail(cfg, 10)
 	if te != nil {
 		t.Fatalf("LogTail failed: %v", te)
 	}
 
-	// existing/wiki/log.md has 14 entries
+	// existing fixture has 14 entries
 	if len(entries) != 10 {
-		t.Errorf("expected 10 entries (tail of 14), got %d", len(entries))
+		t.Fatalf("expected 10 entries (tail of 14), got %d", len(entries))
 	}
 
 	// Last entry is the most recent ingest
@@ -52,7 +54,7 @@ func TestLogTail_ExistingLog(t *testing.T) {
 }
 
 func TestLogTail_AllEntries(t *testing.T) {
-	cfg := logTestConfig(t, filepath.Join("..", "..", "existing", "wiki"))
+	cfg := logTestConfig(t, "testdata")
 
 	entries, te := LogTail(cfg, 100)
 	if te != nil {
@@ -60,7 +62,7 @@ func TestLogTail_AllEntries(t *testing.T) {
 	}
 
 	if len(entries) != 14 {
-		t.Errorf("expected 14 total entries, got %d", len(entries))
+		t.Fatalf("expected 14 total entries, got %d", len(entries))
 	}
 
 	// First entry
@@ -88,11 +90,7 @@ func TestLogTail_MissingFile(t *testing.T) {
 
 func TestLogAppend_Basic(t *testing.T) {
 	dir := t.TempDir()
-	src := filepath.Join("..", "..", "existing", "wiki", "log.md")
-	data, err := os.ReadFile(src)
-	if err != nil {
-		t.Fatalf("cannot read existing log.md: %v", err)
-	}
+	data := readLogFixture(t)
 	if err := os.WriteFile(filepath.Join(dir, "log.md"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
