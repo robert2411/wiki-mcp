@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,12 +10,19 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"log/slog"
+
+	"go.uber.org/goleak"
 
 	"github.com/robertstevens/wiki-mcp/internal/config"
 	"github.com/robertstevens/wiki-mcp/internal/web"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func testServer(t *testing.T, wikiPath string) *httptest.Server {
 	t.Helper()
@@ -326,6 +334,59 @@ func httpGetBody(t *testing.T, url string) string {
 		t.Fatal(err)
 	}
 	return b.String()
+}
+
+// TestGracefulShutdownNoLeaks verifies graceful shutdown on context cancellation
+// (simulating SIGINT/SIGTERM) leaves no goroutine leaks.
+func TestGracefulShutdownNoLeaks(t *testing.T) {
+	wikiPath := t.TempDir()
+	writeFile(t, wikiPath, "index.md", "# Index\n")
+
+	cfg := &config.Config{
+		WikiPath: wikiPath,
+		Web:      config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: false},
+		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+	}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	srv, err := web.NewServer(cfg, logger)
+	if err != nil {
+		t.Fatalf("NewServer: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ready := make(chan string, 1) // receives the listening addr
+	done := make(chan error, 1)
+	go func() { done <- srv.Run(ctx, ready) }()
+
+	// Wait for the server to report its listening address before triggering shutdown.
+	var addr string
+	select {
+	case addr = <-ready:
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not start within 5s")
+	}
+
+	// Confirm the server is accepting connections. Use a no-keepalive client so
+	// the transport doesn't leave persistent-connection goroutines after the
+	// response is read (which goleak would flag as a leak).
+	noKA := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+	resp, err := noKA.Get("http://" + addr + "/")
+	if err != nil {
+		t.Fatalf("server not reachable at %s: %v", addr, err)
+	}
+	resp.Body.Close()
+
+	// Trigger shutdown (simulates SIGINT/SIGTERM cancelling the root context).
+	cancel()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run returned error after cancel: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not shut down within 5s")
+	}
 }
 
 func writeFile(t *testing.T, dir, relPath, content string) {

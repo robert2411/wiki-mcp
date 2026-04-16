@@ -115,7 +115,8 @@ func (s *Server) Handler() http.Handler {
 
 // Run starts the HTTP server and blocks until ctx is cancelled or an error
 // occurs. It performs a graceful shutdown with a 10-second drain timeout.
-func (s *Server) Run(ctx context.Context) error {
+// If ready is non-nil, the listening address is sent on it once the port is bound.
+func (s *Server) Run(ctx context.Context, ready chan<- string) error {
 	if s.cfg.Web.AutoRebuild {
 		startWatcher(ctx, s.cfg.WikiPath, s.logger, s.InvalidateCache, fsnotify.NewWatcher)
 	}
@@ -130,7 +131,11 @@ func (s *Server) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("web: listen %s: %w", addr, err)
 	}
-	s.logger.Info("web UI listening", "addr", "http://"+addr)
+	listenAddr := ln.Addr().String()
+	s.logger.Info("web UI listening", "addr", "http://"+listenAddr)
+	if ready != nil {
+		ready <- listenAddr
+	}
 
 	serveErr := make(chan error, 1)
 	go func() {

@@ -121,7 +121,7 @@ func main() {
 			os.Exit(1)
 		}
 		g.Go(func() error {
-			return webSrv.Run(gctx)
+			return webSrv.Run(gctx, nil)
 		})
 	}
 
