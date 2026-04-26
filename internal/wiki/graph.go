@@ -57,7 +57,7 @@ func LinksIncoming(cfg *config.Config, relPath string) ([]string, *ToolError) {
 	}
 
 	targetTitle := TitleFromPath(relPath)
-	root := cfg.WikiPath
+	root := cfg.Root()
 	var backlinks []string
 
 	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, walkErr error) error {
@@ -94,7 +94,7 @@ func LinksIncoming(cfg *config.Config, relPath string) ([]string, *ToolError) {
 // Orphans returns pages with zero incoming links, excluding index.md and log.md
 // both as candidates and as link sources.
 func Orphans(cfg *config.Config) ([]string, *ToolError) {
-	root := cfg.WikiPath
+	root := cfg.Root()
 
 	var candidates []string
 	hasIncoming := make(map[string]bool)

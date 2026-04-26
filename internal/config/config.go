@@ -63,6 +63,7 @@ type SafetyConfig struct {
 // Config is the top-level configuration struct.
 type Config struct {
 	WikiPath    string       `toml:"wiki_path"`
+	ProjectPath string       `toml:"project_path"`
 	SourcesPath string       `toml:"sources_path"`
 	Web         WebConfig    `toml:"web"`
 	MCP         MCPConfig    `toml:"mcp"`
@@ -75,12 +76,13 @@ type Config struct {
 // Flags holds CLI flag values that were explicitly set by the user.
 // nil pointer means "not set by user."
 type Flags struct {
-	ConfigFile *string
-	WikiPath   *string
-	Port       *int
-	Bind       *string
-	MCPPort    *int
-	AuthToken  *string
+	ConfigFile  *string
+	WikiPath    *string
+	ProjectPath *string
+	Port        *int
+	Bind        *string
+	MCPPort     *int
+	AuthToken   *string
 }
 
 // Defaults returns a Config populated with built-in defaults.
@@ -156,6 +158,9 @@ func Load(flags Flags) (*Config, error) {
 	if flags.WikiPath != nil {
 		cfg.WikiPath = *flags.WikiPath
 	}
+	if flags.ProjectPath != nil {
+		cfg.ProjectPath = *flags.ProjectPath
+	}
 	if flags.Port != nil {
 		cfg.Web.Port = *flags.Port
 	}
@@ -177,14 +182,24 @@ func Load(flags Flags) (*Config, error) {
 	return &cfg, nil
 }
 
-// ResolveWikiPath joins rel to the wiki root and returns a cleaned absolute
-// path. If ConfineToWikiPath is true and the result escapes the wiki root,
-// an error is returned.
+// Root returns the effective working root for wiki tools. When a project path
+// is configured it returns the absolute project path; otherwise it returns
+// the wiki path.
+func (c *Config) Root() string {
+	if c.ProjectPath != "" {
+		return c.ProjectPath
+	}
+	return c.WikiPath
+}
+
+// ResolveWikiPath joins rel to the effective root and returns a cleaned
+// absolute path. If ConfineToWikiPath is true and the result escapes the
+// root, an error is returned.
 func (c *Config) ResolveWikiPath(rel string) (string, error) {
-	resolved := filepath.Join(c.WikiPath, rel)
+	root := c.Root()
+	resolved := filepath.Join(root, rel)
 
 	if c.Safety.ConfineToWikiPath {
-		root := c.WikiPath
 		if resolved != root && !strings.HasPrefix(resolved, root+string(os.PathSeparator)) {
 			return "", fmt.Errorf("path %q escapes wiki root %q", rel, root)
 		}
@@ -224,6 +239,7 @@ func xdgConfigPath() string {
 
 func applyEnvOverrides(cfg *Config) {
 	envStr("WIKI_MCP_WIKI_PATH", &cfg.WikiPath)
+	envStr("WIKI_MCP_PROJECT_PATH", &cfg.ProjectPath)
 	envStr("WIKI_MCP_SOURCES_PATH", &cfg.SourcesPath)
 	envBool("WIKI_MCP_WEB_ENABLED", &cfg.Web.Enabled)
 	envInt("WIKI_MCP_WEB_PORT", &cfg.Web.Port)
@@ -273,6 +289,18 @@ func validate(cfg *Config) error {
 		return fmt.Errorf("cannot resolve wiki_path %q: %w", cfg.WikiPath, err)
 	}
 	cfg.WikiPath = filepath.Clean(abs)
+
+	if cfg.ProjectPath != "" {
+		absProject, err := filepath.Abs(cfg.ProjectPath)
+		if err != nil {
+			return fmt.Errorf("cannot resolve project_path %q: %w", cfg.ProjectPath, err)
+		}
+		absProject = filepath.Clean(absProject)
+		if absProject != cfg.WikiPath && !strings.HasPrefix(absProject, cfg.WikiPath+string(os.PathSeparator)) {
+			return fmt.Errorf("project_path %q must be within wiki_path %q", absProject, cfg.WikiPath)
+		}
+		cfg.ProjectPath = absProject
+	}
 
 	if cfg.SourcesPath == "" {
 		cfg.SourcesPath = filepath.Join(filepath.Dir(cfg.WikiPath), "sources")

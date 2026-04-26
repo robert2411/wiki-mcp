@@ -395,3 +395,57 @@ func TestEnvScalarOverrides(t *testing.T) {
 		t.Error("ConfineToWikiPath should be false")
 	}
 }
+
+func TestRoot_NoProject(t *testing.T) {
+	cfg := &Config{WikiPath: "/wiki"}
+	if cfg.Root() != "/wiki" {
+		t.Errorf("Root() = %q, want /wiki", cfg.Root())
+	}
+}
+
+func TestRoot_WithProject(t *testing.T) {
+	cfg := &Config{WikiPath: "/wiki", ProjectPath: "/wiki/myproject"}
+	if cfg.Root() != "/wiki/myproject" {
+		t.Errorf("Root() = %q, want /wiki/myproject", cfg.Root())
+	}
+}
+
+func TestProjectPath_MustBeWithinWikiPath(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	outsideDir := filepath.Join(dir, "outside")
+	for _, d := range []string{wikiDir, outsideDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	wp := wikiDir
+	pp := outsideDir
+	_, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp})
+	if err == nil {
+		t.Fatal("expected error for project_path outside wiki_path")
+	}
+	if !strings.Contains(err.Error(), "must be within") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestProjectPath_ValidSubdir(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "myproject")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wp := wikiDir
+	pp := projectDir
+	cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Root() != projectDir {
+		t.Errorf("Root() = %q, want %q", cfg.Root(), projectDir)
+	}
+}

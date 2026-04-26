@@ -229,7 +229,7 @@ func PageList(cfg *config.Config, filter PageListFilter) ([]PageListEntry, *Tool
 		updatedSince = t
 	}
 
-	root := cfg.WikiPath
+	root := cfg.Root()
 	err := filepath.WalkDir(root, func(abs string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip unreadable
@@ -385,7 +385,7 @@ func PageMove(cfg *config.Config, oldRel, newRel string) *ToolError {
 	oldTitle := TitleFromPath(oldRel)
 	newTitle := TitleFromPath(newRel)
 
-	root := cfg.WikiPath
+	root := cfg.Root()
 	_ = filepath.WalkDir(root, func(abs string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(abs, ".md") {
 			return nil

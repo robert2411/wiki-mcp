@@ -61,6 +61,7 @@ type pageData struct {
 	Query       string
 	ContentHTML template.HTML
 	Nav         []navSection
+	Projects    []wiki.ProjectInfo
 }
 
 // searchData is passed to search.html.
@@ -163,7 +164,7 @@ func (s *Server) buildRouter() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/", s.handlePage("index.md"))
+	r.Get("/", s.handleRoot)
 	r.Get("/_log", s.handlePage("log.md"))
 	r.Get("/_search", s.handleSearch)
 	r.Get("/_search_index.json", s.handleSearchIndex)
@@ -304,6 +305,46 @@ func wikiTitle(wikiPath string) string {
 func (s *Server) handlePage(relPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.servePage(w, r, relPath)
+	}
+}
+
+// handleRoot renders index.md enriched with a project overview section.
+func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	s.serveRootPage(w, r)
+}
+
+func (s *Server) serveRootPage(w http.ResponseWriter, r *http.Request) {
+	abs, err := s.cfg.ResolveWikiPath("index.md")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	cp, err := s.cachedPageEntry(abs, "index.md")
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "render error", http.StatusInternalServerError)
+		s.logger.Error("render page", "path", "index.md", "err", err)
+		return
+	}
+
+	projects, _ := wiki.ProjectList(s.cfg)
+
+	w.Header().Set("ETag", cp.etag)
+	w.Header().Set("Last-Modified", cp.modTime.UTC().Format(http.TimeFormat))
+	data := pageData{
+		Title:       cp.page.Title,
+		WikiTitle:   s.cachedWikiTitle(),
+		ContentHTML: template.HTML(cp.page.HTML), // #nosec G203 — content is produced by our own markdown renderer
+		Nav:         s.navSections(),
+		Projects:    projects,
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.tmplPage.Execute(w, data); err != nil {
+		s.logger.Error("template execute", "err", err)
 	}
 }
 

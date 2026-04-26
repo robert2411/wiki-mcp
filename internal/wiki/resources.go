@@ -126,6 +126,7 @@ func handleResourceLogRecent(cfg *config.Config) mcpserver.ResourceHandlerFunc {
 // guarding against future sensitive additions to SafetyConfig.
 type safeConfig struct {
 	WikiPath    string             `json:"wiki_path"`
+	ProjectPath string             `json:"project_path,omitempty"`
 	SourcesPath string             `json:"sources_path"`
 	Web         config.WebConfig   `json:"web"`
 	Index       config.IndexConfig `json:"index"`
@@ -138,6 +139,7 @@ func handleResourceConfig(cfg *config.Config) mcpserver.ResourceHandlerFunc {
 	// Marshal once at construction; cfg is immutable after startup.
 	b, err := json.Marshal(safeConfig{
 		WikiPath:    cfg.WikiPath,
+		ProjectPath: cfg.ProjectPath,
 		SourcesPath: cfg.SourcesPath,
 		Web:         cfg.Web,
 		Index:       cfg.Index,

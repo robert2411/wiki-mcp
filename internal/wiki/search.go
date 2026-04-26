@@ -39,7 +39,7 @@ func WikiSearch(cfg *config.Config, query string, limit int) ([]WikiSearchResult
 		return nil, NewToolError(ErrCodeBadRequest, "invalid query: "+err.Error())
 	}
 
-	root := cfg.WikiPath
+	root := cfg.Root()
 	var results []WikiSearchResult
 
 	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, walkErr error) error {

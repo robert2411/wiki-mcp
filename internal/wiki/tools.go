@@ -31,6 +31,9 @@ func RegisterTools(srv *server.Server) {
 	srv.RegisterTool(linksOutgoingTool(), handleLinksOutgoing(cfg))
 	srv.RegisterTool(linksIncomingTool(), handleLinksIncoming(cfg))
 	srv.RegisterTool(orphansTool(), handleOrphans(cfg))
+
+	srv.RegisterTool(wikiInitTool(), handleWikiInit(cfg))
+	srv.RegisterTool(projectListTool(), handleProjectList(cfg))
 }
 
 // --- Tool definitions ---
@@ -406,5 +409,41 @@ func handleOrphans(cfg *config.Config) func(ctx context.Context, req mcp.CallToo
 		}
 
 		return mcp.NewToolResultJSON(orphans)
+	}
+}
+
+func wikiInitTool() mcp.Tool {
+	return mcp.NewTool("wiki_init",
+		mcp.WithDescription("Bootstrap a new wiki: creates the wiki directory, section subdirectories, index.md, and log.md. Safe to run on an existing wiki — existing files are never overwritten."),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+	)
+}
+
+func handleWikiInit(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, te := WikiInit(cfg)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+		return mcp.NewToolResultJSON(result)
+	}
+}
+
+func projectListTool() mcp.Tool {
+	return mcp.NewTool("project_list",
+		mcp.WithDescription("List all projects (sub-wikis) in the wiki root. A project is a subdirectory containing an index.md file."),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+	)
+}
+
+func handleProjectList(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		projects, te := ProjectList(cfg)
+		if te != nil {
+			return toolErrorResult(te), nil
+		}
+		return mcp.NewToolResultJSON(projects)
 	}
 }

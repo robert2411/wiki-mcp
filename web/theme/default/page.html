@@ -33,6 +33,15 @@
   </aside>
   <main class="main">
     {{.ContentHTML}}
+    {{if .Projects}}
+    <section class="projects-overview">
+      <h2>Projects</h2>
+      <ul class="projects-list">
+        {{range .Projects}}<li><a href="/{{.Name}}">{{.Name}}</a></li>
+        {{end}}
+      </ul>
+    </section>
+    {{end}}
   </main>
 </div>
 <script src="/_theme/theme.js"></script>

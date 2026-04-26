@@ -33,6 +33,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "print version and exit")
 	configFile := flag.String("config", "", "path to TOML config file")
 	wikiPath := flag.String("wiki-path", "", "path to the wiki directory")
+	projectPath := flag.String("project", "", "scope all tools to this project subdirectory (must be within wiki-path)")
 	port := flag.Int("port", 0, "web UI HTTP listen port")
 	bind := flag.String("bind", "", "bind address for MCP HTTP transport (and web UI)")
 	mcpPort := flag.Int("mcp-port", 0, "MCP HTTP transport listen port (streamable-http, used with --transport sse)")
@@ -67,6 +68,8 @@ func main() {
 			flags.ConfigFile = configFile
 		case "wiki-path":
 			flags.WikiPath = wikiPath
+		case "project":
+			flags.ProjectPath = projectPath
 		case "port":
 			flags.Port = port
 		case "bind":

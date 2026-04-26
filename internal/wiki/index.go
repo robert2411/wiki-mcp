@@ -379,7 +379,7 @@ func IndexRefreshStats(cfg *config.Config) *ToolError {
 
 	// Count .md files (excluding index.md and log.md)
 	count := 0
-	root := cfg.WikiPath
+	root := cfg.Root()
 	_ = filepath.WalkDir(root, func(abs string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(abs, ".md") {
 			return nil
