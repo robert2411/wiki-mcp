@@ -85,11 +85,19 @@ Done. Ask your AI assistant to list the wiki tools and start using them.
 - **stdio** (default) — for local MCP clients
 - **Streamable HTTP / SSE** (`--transport sse`) — for remote access from a different machine
 
+### Projects
+
+A **project** is a subdirectory of your wiki root containing its own `index.md`. Scope any MCP session to a project with `--project /path/to/wiki/my-project` (or `WIKI_MCP_PROJECT_PATH`). All tools then operate within that subtree. `project_list` returns all projects at the wiki root. The web UI home page lists them automatically. See [docs/config.md § Projects](docs/config.md#projects).
+
+### Audit log
+
+Every tool call is automatically appended as a row in `wiki_root/audit.md`. Agents cannot modify it. See [docs/config.md § Audit log](docs/config.md#audit-log).
+
 ### Web UI
 
-Built-in read-only browser. Renders markdown, sidebar navigation, full-text search, dark mode toggle. No MkDocs, no systemd.
+Built-in read-only browser. Renders markdown, sidebar navigation, full-text search, dark mode toggle. No MkDocs, no systemd. The home page shows an overview of all projects when they exist.
 
-*Screenshot: browse your wiki at `http://localhost:9000` with `wiki-mcp --serve-only`.*
+*Browse your wiki at `http://localhost:9000` with `wiki-mcp --serve-only`.*
 
 ---
 
@@ -98,7 +106,7 @@ Built-in read-only browser. Renders markdown, sidebar navigation, full-text sear
 | Document | Description |
 |----------|-------------|
 | [docs/install.md](docs/install.md) | All install methods, full config reference, multi-PC setup, background service, troubleshooting |
-| [docs/config.md](docs/config.md) | Standalone config reference (TOML + env vars) |
+| [docs/config.md](docs/config.md) | Standalone config reference (TOML + env vars + CLI flags), projects, audit log |
 | [docs/clients/claude-desktop.md](docs/clients/claude-desktop.md) | Claude Desktop setup and verified tool surface |
 | [docs/clients/claude-code.md](docs/clients/claude-code.md) | Claude Code setup and end-to-end ingest transcript |
 | [docs/clients/mcp-inspector.md](docs/clients/mcp-inspector.md) | MCP Inspector and scriptable dev harness |
