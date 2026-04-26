@@ -61,12 +61,12 @@ Done. Ask your AI assistant to list the wiki tools and start using them.
 
 ## Features
 
-### Tools (19)
+### Tools (20)
 
 | Group | Tools |
 |-------|-------|
 | Setup | `wiki_init`, `project_list` |
-| Pages | `page_read`, `page_write`, `page_delete`, `page_move`, `page_list` |
+| Pages | `page_read`, `page_write`, `page_append`, `page_delete`, `page_move`, `page_list` |
 | Index | `index_read`, `index_upsert_entry`, `index_refresh_stats` |
 | Log | `log_append`, `log_tail` |
 | Search & links | `wiki_search`, `links_incoming`, `links_outgoing`, `orphans` |

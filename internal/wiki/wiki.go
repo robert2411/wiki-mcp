@@ -159,6 +159,11 @@ func PageWrite(cfg *config.Config, relPath string, fm map[string]any, body strin
 		return NewToolError(ErrCodePathEscape, err.Error())
 	}
 
+	if protectedBasenames[filepath.Base(abs)] {
+		return NewToolError(ErrCodeForbidden,
+			fmt.Sprintf("cannot write %q: it is a protected wiki file", filepath.Base(abs)))
+	}
+
 	content := RenderFrontmatter(fm, body)
 
 	if cfg.Safety.MaxPageBytes > 0 && len(content) > cfg.Safety.MaxPageBytes {
@@ -176,10 +181,52 @@ func PageWrite(cfg *config.Config, relPath string, fm map[string]any, body strin
 	return nil
 }
 
-// protectedBasenames are filenames that cannot be deleted.
+// PageAppend appends content to the body of an existing page, preserving its
+// frontmatter. Returns ErrCodeNotFound if the page does not exist.
+func PageAppend(cfg *config.Config, relPath, content string) *ToolError {
+	if err := cfg.MustMutate(); err != nil {
+		return NewToolError(ErrCodeReadOnly, err.Error())
+	}
+
+	abs, err := cfg.ResolveWikiPath(relPath)
+	if err != nil {
+		return NewToolError(ErrCodePathEscape, err.Error())
+	}
+
+	if protectedBasenames[filepath.Base(abs)] {
+		return NewToolError(ErrCodeForbidden,
+			fmt.Sprintf("cannot append to %q: it is a protected wiki file", filepath.Base(abs)))
+	}
+
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return NewToolError(ErrCodeNotFound, fmt.Sprintf("page %q not found", relPath))
+		}
+		return NewToolError(ErrCodeInternal, err.Error())
+	}
+
+	fm, body := ParseFrontmatter(data)
+	newBody := body + content
+	newContent := RenderFrontmatter(fm, newBody)
+
+	if cfg.Safety.MaxPageBytes > 0 && len(newContent) > cfg.Safety.MaxPageBytes {
+		return NewToolError(ErrCodeBadRequest,
+			fmt.Sprintf("page would exceed max size (%d > %d bytes)", len(newContent), cfg.Safety.MaxPageBytes))
+	}
+
+	if err := os.WriteFile(abs, newContent, 0o644); err != nil {
+		return NewToolError(ErrCodeInternal, err.Error())
+	}
+	return nil
+}
+
+// protectedBasenames are filenames that cannot be deleted or directly written
+// by agent-facing tools.
 var protectedBasenames = map[string]bool{
 	"index.md": true,
 	"log.md":   true,
+	"audit.md": true,
 }
 
 // PageDelete removes a page. Rejects index.md and log.md.

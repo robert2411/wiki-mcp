@@ -4,12 +4,15 @@ package server
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -42,9 +45,56 @@ func New(cfg *config.Config, version string, logger *slog.Logger) *Server {
 	}
 }
 
-// RegisterTool adds a tool. M2+ tasks call this from their own packages.
+// RegisterTool adds a tool. Every handler is wrapped with audit logging.
 func (s *Server) RegisterTool(tool mcp.Tool, handler mcpserver.ToolHandlerFunc) {
-	s.mcp.AddTool(tool, handler)
+	s.mcp.AddTool(tool, s.auditWrap(tool.Name, handler))
+}
+
+// auditWrap returns a handler that calls the original and then appends an
+// entry to audit.md in the wiki root. Audit failures are silently dropped so
+// they never affect tool call results.
+func (s *Server) auditWrap(toolName string, handler mcpserver.ToolHandlerFunc) mcpserver.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := handler(ctx, req)
+		go s.appendAuditEntry(toolName, req)
+		return result, err
+	}
+}
+
+func (s *Server) appendAuditEntry(toolName string, req mcp.CallToolRequest) {
+	auditPath := filepath.Join(s.cfg.WikiPath, "audit.md")
+
+	now := time.Now()
+	date := now.Format("2006-01-02")
+	timeStr := now.Format("15:04:05")
+	project := s.cfg.ProjectPath
+	if project == "" {
+		project = "-"
+	}
+
+	args := req.GetArguments()
+	var paramsSummary string
+	if b, err := json.Marshal(args); err == nil {
+		paramsSummary = string(b)
+		if len(paramsSummary) > 200 {
+			paramsSummary = paramsSummary[:197] + "..."
+		}
+	}
+
+	entry := fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
+		date, timeStr, project, toolName, paramsSummary)
+
+	f, err := os.OpenFile(auditPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	// Write header if file is empty.
+	if fi, err := f.Stat(); err == nil && fi.Size() == 0 {
+		_, _ = f.WriteString("# Audit Log\n\n| Date | Time | Project | Tool | Params |\n|------|------|---------|------|--------|\n")
+	}
+	_, _ = f.WriteString(entry)
 }
 
 func (s *Server) RegisterResource(resource mcp.Resource, handler mcpserver.ResourceHandlerFunc) {

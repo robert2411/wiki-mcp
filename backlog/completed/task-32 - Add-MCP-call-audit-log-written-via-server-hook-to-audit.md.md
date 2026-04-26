@@ -1,9 +1,10 @@
 ---
 id: TASK-32
 title: Add MCP call audit log written via server hook to audit.md
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-04-26 20:54'
+updated_date: '2026-04-26 21:12'
 labels:
   - enhancement
   - audit
@@ -36,6 +37,12 @@ Each entry must record:
 - [ ] #5 Audit append is non-blocking — tool call must not fail if audit write fails
 - [ ] #6 Format is consistent and machine-readable (e.g. markdown table row or structured list)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Added auditWrap in server.go: RegisterTool wraps every handler, fires a background goroutine after each call that appends a markdown table row to wiki_root/audit.md. Entry contains date, time, project path, tool name, params JSON (truncated at 200 chars). Creates audit.md with header on first write. audit.md added to protectedBasenames — agents cannot write, append, or delete it.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

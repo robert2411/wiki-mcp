@@ -490,6 +490,99 @@ func TestToolError_JSON(t *testing.T) {
 	}
 }
 
+func TestPageAppend_AppendsToBody(t *testing.T) {
+	root := t.TempDir()
+	seedPage(t, root, "notes.md", "# Notes\n\nInitial content.\n")
+	cfg := testConfig(t, root)
+
+	if te := PageAppend(cfg, "notes.md", "\nAppended line.\n"); te != nil {
+		t.Fatalf("unexpected error: %v", te)
+	}
+
+	data, _ := os.ReadFile(filepath.Join(root, "notes.md"))
+	body := string(data)
+	if !strings.Contains(body, "Initial content.") {
+		t.Error("original content should be preserved")
+	}
+	if !strings.Contains(body, "Appended line.") {
+		t.Error("appended content should be present")
+	}
+}
+
+func TestPageAppend_PreservesFrontmatter(t *testing.T) {
+	root := t.TempDir()
+	seedPage(t, root, "notes.md", "---\ntitle: Notes\n---\n\nBody.\n")
+	cfg := testConfig(t, root)
+
+	if te := PageAppend(cfg, "notes.md", "\nExtra.\n"); te != nil {
+		t.Fatalf("unexpected error: %v", te)
+	}
+
+	data, _ := os.ReadFile(filepath.Join(root, "notes.md"))
+	body := string(data)
+	if !strings.Contains(body, "title: Notes") {
+		t.Error("frontmatter should be preserved")
+	}
+	if !strings.Contains(body, "Extra.") {
+		t.Error("appended content should be present")
+	}
+}
+
+func TestPageAppend_NotFound(t *testing.T) {
+	root := t.TempDir()
+	cfg := testConfig(t, root)
+
+	te := PageAppend(cfg, "missing.md", "content")
+	if te == nil {
+		t.Fatal("expected error")
+	}
+	if te.Code != ErrCodeNotFound {
+		t.Errorf("expected NotFound, got %q", te.Code)
+	}
+}
+
+func TestPageAppend_RejectsProtected(t *testing.T) {
+	root := t.TempDir()
+	seedPage(t, root, "audit.md", "# Audit Log\n")
+	cfg := testConfig(t, root)
+
+	te := PageAppend(cfg, "audit.md", "injected")
+	if te == nil {
+		t.Fatal("expected error appending to audit.md")
+	}
+	if te.Code != ErrCodeForbidden {
+		t.Errorf("expected Forbidden, got %q", te.Code)
+	}
+}
+
+func TestPageWrite_RejectsAuditMd(t *testing.T) {
+	root := t.TempDir()
+	cfg := testConfig(t, root)
+
+	te := PageWrite(cfg, "audit.md", nil, "injected")
+	if te == nil {
+		t.Fatal("expected error writing audit.md")
+	}
+	if te.Code != ErrCodeForbidden {
+		t.Errorf("expected Forbidden, got %q", te.Code)
+	}
+}
+
+func TestPageAppend_ReadOnly(t *testing.T) {
+	root := t.TempDir()
+	seedPage(t, root, "notes.md", "# Notes\n")
+	cfg := testConfig(t, root)
+	cfg.Safety.ReadOnly = true
+
+	te := PageAppend(cfg, "notes.md", "extra")
+	if te == nil {
+		t.Fatal("expected error")
+	}
+	if te.Code != ErrCodeReadOnly {
+		t.Errorf("expected ReadOnly, got %q", te.Code)
+	}
+}
+
 func TestTitleFromPath(t *testing.T) {
 	tests := []struct {
 		path string

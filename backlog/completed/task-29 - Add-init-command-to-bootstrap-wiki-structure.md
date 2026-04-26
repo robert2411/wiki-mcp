@@ -1,9 +1,10 @@
 ---
 id: TASK-29
 title: Add init command to bootstrap wiki structure
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-04-26 20:30'
+updated_date: '2026-04-26 21:04'
 labels:
   - feature
   - cli
@@ -30,6 +31,12 @@ The command should create the wiki directory if it doesn't exist, lay down a sta
 - [ ] #7 Init behaviour is covered by unit/integration tests
 - [ ] #8 README or docs updated to describe the init command and expected output structure
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented in previous session alongside TASK-30. wiki_init MCP tool, WikiInit function, init_test.go — all shipped in commit 26992df.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

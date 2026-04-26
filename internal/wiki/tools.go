@@ -16,6 +16,7 @@ func RegisterTools(srv *server.Server) {
 
 	srv.RegisterTool(pageReadTool(), handlePageRead(cfg))
 	srv.RegisterTool(pageWriteTool(), handlePageWrite(cfg))
+	srv.RegisterTool(pageAppendTool(), handlePageAppend(cfg))
 	srv.RegisterTool(pageDeleteTool(), handlePageDelete(cfg))
 	srv.RegisterTool(pageListTool(), handlePageList(cfg))
 	srv.RegisterTool(pageMoveTool(), handlePageMove(cfg))
@@ -55,6 +56,16 @@ func pageWriteTool() mcp.Tool {
 		mcp.WithObject("frontmatter", mcp.Description("Optional YAML frontmatter as key-value pairs")),
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
+	)
+}
+
+func pageAppendTool() mcp.Tool {
+	return mcp.NewTool("page_append",
+		mcp.WithDescription("Append markdown content to the end of an existing wiki page, preserving its frontmatter. Returns an error if the page does not exist."),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Relative path to the page")),
+		mcp.WithString("content", mcp.Required(), mcp.Description("Markdown content to append")),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 	)
 }
 
@@ -135,6 +146,25 @@ func handlePageWrite(cfg *config.Config) func(ctx context.Context, req mcp.CallT
 		}
 
 		return mcp.NewToolResultText(fmt.Sprintf("page %q written successfully", path)), nil
+	}
+}
+
+func handlePageAppend(cfg *config.Config) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		path, err := req.RequireString("path")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+		content, err := req.RequireString("content")
+		if err != nil {
+			return toolErrorResult(NewToolError(ErrCodeBadRequest, err.Error())), nil
+		}
+
+		if te := PageAppend(cfg, path, content); te != nil {
+			return toolErrorResult(te), nil
+		}
+
+		return mcp.NewToolResultText(fmt.Sprintf("content appended to %q", path)), nil
 	}
 }
 
