@@ -23,9 +23,9 @@ wiki_path = "/home/yourname/Documents/wiki"
 wiki_path = "/home/yourname/Documents/wiki"
 
 # Optional. Scope all wiki tools to this project subdirectory.
-# Must be a path within wiki_path. When set, tools read/write relative
-# to this directory instead of wiki_path. See "Projects" below.
-project_path = "/home/yourname/Documents/wiki/my-project"
+# Relative paths are resolved against wiki_path (preferred).
+# Absolute paths within wiki_path are also accepted.
+project_path = "my-project"   # → /home/yourname/Documents/wiki/my-project
 
 # Optional. Where source files live. Defaults to <wiki_path>/../sources.
 sources_path = "/home/yourname/Documents/sources"
@@ -75,7 +75,7 @@ max_page_bytes = 1048576      # 1 MiB default.
 |----------------------------|----------------------------|--------------------------------------------------|
 | `WIKI_MCP_CONFIG`          | *(path override)*          | Path to a TOML config file                       |
 | `WIKI_MCP_WIKI_PATH`       | `wiki_path`                | Path to the wiki root directory                  |
-| `WIKI_MCP_PROJECT_PATH`    | `project_path`             | Scope tools to this project subdirectory         |
+| `WIKI_MCP_PROJECT_PATH`    | `project_path`             | Scope tools to this project (relative or absolute path) |
 | `WIKI_MCP_SOURCES_PATH`    | `sources_path`             | Path to source files directory                   |
 | `WIKI_MCP_WEB_ENABLED`     | `web.enabled`              | Enable the web UI (`true` or `1`)                |
 | `WIKI_MCP_WEB_PORT`        | `web.port`                 | Web UI port (default 9000)                       |
@@ -93,7 +93,7 @@ max_page_bytes = 1048576      # 1 MiB default.
 | Flag              | Description                                                          |
 |-------------------|----------------------------------------------------------------------|
 | `--wiki-path`     | Path to wiki root (same as `WIKI_MCP_WIKI_PATH`)                    |
-| `--project`       | Scope tools to this project subdirectory (same as `WIKI_MCP_PROJECT_PATH`) |
+| `--project`       | Scope tools to this project — relative or absolute path (same as `WIKI_MCP_PROJECT_PATH`) |
 | `--config`        | Path to config file                                                  |
 | `--port`          | Web UI port                                                          |
 | `--bind`          | Bind address for both the web UI and MCP HTTP transport              |
@@ -133,10 +133,11 @@ wiki/
 
 When `project_path` is set, all tools (`page_read`, `page_write`, `page_list`, `wiki_search`, etc.) operate relative to that directory. `project_list` always scans the full `wiki_path` so you can discover all projects regardless of which one is active.
 
-**Scope a session to a project via CLI flag:**
+**Scope a session to a project via CLI flag (relative path):**
 
 ```bash
-wiki-mcp --project /home/yourname/Documents/wiki/my-project
+wiki-mcp --project my-project
+wiki-mcp --project research/2026
 ```
 
 **Or via env var (useful in MCP client config):**
@@ -148,12 +149,14 @@ wiki-mcp --project /home/yourname/Documents/wiki/my-project
       "command": "/usr/local/bin/wiki-mcp",
       "env": {
         "WIKI_MCP_WIKI_PATH": "/home/yourname/Documents/wiki",
-        "WIKI_MCP_PROJECT_PATH": "/home/yourname/Documents/wiki/my-project"
+        "WIKI_MCP_PROJECT_PATH": "my-project"
       }
     }
   }
 }
 ```
+
+Relative paths are resolved against `wiki_path`. Absolute paths within `wiki_path` are also accepted.
 
 Projects can nest arbitrarily deep. `project_path` is validated at startup: it must be an absolute path within `wiki_path`, or the server exits with an error.
 

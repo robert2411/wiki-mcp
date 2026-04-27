@@ -451,3 +451,59 @@ func TestProjectPath_ValidSubdir(t *testing.T) {
 		t.Errorf("Root() = %q, want %q", cfg.Root(), projectDir)
 	}
 }
+
+func TestProjectPath_RelativeResolvesAgainstWikiPath(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "myproject")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wp := wikiDir
+	pp := "myproject" // relative — should be resolved against wiki_path
+	cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Root() != projectDir {
+		t.Errorf("Root() = %q, want %q", cfg.Root(), projectDir)
+	}
+}
+
+func TestProjectPath_RelativeNestedResolvesAgainstWikiPath(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "research", "2026")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wp := wikiDir
+	pp := "research/2026"
+	cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Root() != projectDir {
+		t.Errorf("Root() = %q, want %q", cfg.Root(), projectDir)
+	}
+}
+
+func TestProjectPath_RelativeEscapeRejected(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	if err := os.MkdirAll(wikiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wp := wikiDir
+	pp := "../outside"
+	_, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp})
+	if err == nil {
+		t.Fatal("expected error for relative path escaping wiki_path")
+	}
+	if !strings.Contains(err.Error(), "must be within") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

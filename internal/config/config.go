@@ -292,7 +292,13 @@ func validate(cfg *Config) error {
 	cfg.WikiPath = filepath.Clean(abs)
 
 	if cfg.ProjectPath != "" {
-		absProject, err := filepath.Abs(cfg.ProjectPath)
+		// Relative paths are resolved against wiki_path so callers can pass
+		// just the subpath (e.g. "my-project") without repeating the wiki root.
+		raw := cfg.ProjectPath
+		if !filepath.IsAbs(raw) {
+			raw = filepath.Join(cfg.WikiPath, raw)
+		}
+		absProject, err := filepath.Abs(raw)
 		if err != nil {
 			return fmt.Errorf("cannot resolve project_path %q: %w", cfg.ProjectPath, err)
 		}

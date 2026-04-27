@@ -67,12 +67,14 @@ Use `WIKI_MCP_PROJECT_PATH` (or `--project`) to restrict all tools to a specific
       "args": [],
       "env": {
         "WIKI_MCP_WIKI_PATH": "/path/to/your/wiki",
-        "WIKI_MCP_PROJECT_PATH": "/path/to/your/wiki/my-project"
+        "WIKI_MCP_PROJECT_PATH": "my-project"
       }
     }
   }
 }
 ```
+
+`WIKI_MCP_PROJECT_PATH` accepts a path relative to the wiki root — no need to repeat the full path. Absolute paths within the wiki root are also accepted.
 
 Or via CLI flag:
 
@@ -82,7 +84,7 @@ Or via CLI flag:
     "wiki-myproject": {
       "type": "stdio",
       "command": "/path/to/wiki-mcp",
-      "args": ["--wiki-path", "/path/to/your/wiki", "--project", "/path/to/your/wiki/my-project"]
+      "args": ["--wiki-path", "/path/to/your/wiki", "--project", "my-project"]
     }
   }
 }
@@ -94,8 +96,8 @@ You can register multiple entries in `mcpServers` — one per project — so Cla
 {
   "mcpServers": {
     "wiki-default":    { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki" } },
-    "wiki-research":   { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "/wiki/research" } },
-    "wiki-work":       { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "/wiki/work" } }
+    "wiki-research":   { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "research" } },
+    "wiki-work":       { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "work" } }
   }
 }
 ```
