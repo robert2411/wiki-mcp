@@ -60,6 +60,15 @@ type SafetyConfig struct {
 	MaxPageBytes      int  `toml:"max_page_bytes"`
 }
 
+// GitConfig controls the periodic git auto-commit feature.
+type GitConfig struct {
+	Enabled     bool   `toml:"enabled"`
+	Interval    string `toml:"interval"`
+	Push        bool   `toml:"push"`
+	AuthorName  string `toml:"author_name"`
+	AuthorEmail string `toml:"author_email"`
+}
+
 // Config is the top-level configuration struct.
 type Config struct {
 	WikiPath       string       `toml:"wiki_path"`
@@ -72,6 +81,7 @@ type Config struct {
 	Log            LogConfig    `toml:"log"`
 	Links          LinksConfig  `toml:"links"`
 	Safety         SafetyConfig `toml:"safety"`
+	Git            GitConfig    `toml:"git"`
 }
 
 // Flags holds CLI flag values that were explicitly set by the user.
@@ -117,6 +127,9 @@ func Defaults() Config {
 		Safety: SafetyConfig{
 			ConfineToWikiPath: true,
 			MaxPageBytes:      1048576,
+		},
+		Git: GitConfig{
+			Interval: "1h",
 		},
 	}
 }
@@ -291,6 +304,11 @@ func applyEnvOverrides(cfg *Config) {
 	envStr("WIKI_MCP_LINKS_STYLE", &cfg.Links.Style)
 	envBool("WIKI_MCP_SAFETY_READ_ONLY", &cfg.Safety.ReadOnly)
 	envBool("WIKI_MCP_SAFETY_CONFINE", &cfg.Safety.ConfineToWikiPath)
+	envBool("WIKI_MCP_GIT_ENABLED", &cfg.Git.Enabled)
+	envStr("WIKI_MCP_GIT_INTERVAL", &cfg.Git.Interval)
+	envBool("WIKI_MCP_GIT_PUSH", &cfg.Git.Push)
+	envStr("WIKI_MCP_GIT_AUTHOR_NAME", &cfg.Git.AuthorName)
+	envStr("WIKI_MCP_GIT_AUTHOR_EMAIL", &cfg.Git.AuthorEmail)
 }
 
 func envStr(key string, dest *string) {

@@ -9,9 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"time"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/git"
 	"github.com/robert2411/wiki-mcp/internal/server"
 	"github.com/robert2411/wiki-mcp/internal/sources"
 	"github.com/robert2411/wiki-mcp/internal/web"
@@ -129,6 +132,24 @@ func main() {
 		g.Go(func() error {
 			return webSrv.Run(gctx, nil)
 		})
+	}
+
+	if cfg.Git.Enabled {
+		interval, err := time.ParseDuration(cfg.Git.Interval)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: invalid git.interval %q: %v\n", cfg.Git.Interval, err)
+			os.Exit(1)
+		}
+		if err := git.CheckPrerequisites(cfg.WikiPath); err != nil {
+			logger.Warn("git auto-commit disabled", "reason", err)
+		} else {
+			committer := git.New(cfg.WikiPath, interval, cfg.Git.Push, cfg.Git.AuthorName, cfg.Git.AuthorEmail, logger)
+			g.Go(func() error {
+				committer.Run(gctx)
+				return nil
+			})
+			logger.Info("git auto-commit enabled", "interval", interval, "push", cfg.Git.Push)
+		}
 	}
 
 	if err := g.Wait(); err != nil && ctx.Err() == nil {

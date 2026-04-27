@@ -111,13 +111,16 @@ func pollWatcher(ctx context.Context, wikiPath string, logger *slog.Logger, onCh
 	}
 }
 
-// addDirsRecursive walks root and adds every directory to w.
+// addDirsRecursive walks root and adds every directory to w, skipping .git/.
 func addDirsRecursive(w *fsnotify.Watcher, root string) error {
 	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip unreadable dirs
 		}
 		if d.IsDir() {
+			if d.Name() == ".git" {
+				return filepath.SkipDir
+			}
 			return w.Add(path)
 		}
 		return nil
