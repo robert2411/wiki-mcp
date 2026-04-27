@@ -164,6 +164,10 @@ func PageWrite(cfg *config.Config, relPath string, fm map[string]any, body strin
 			fmt.Sprintf("cannot write %q: it is a protected wiki file", filepath.Base(abs)))
 	}
 
+	if err := cfg.MustAllowWrite(abs); err != nil {
+		return NewToolError(ErrCodeForbidden, err.Error())
+	}
+
 	content := RenderFrontmatter(fm, body)
 
 	if cfg.Safety.MaxPageBytes > 0 && len(content) > cfg.Safety.MaxPageBytes {
@@ -196,6 +200,10 @@ func PageAppend(cfg *config.Config, relPath, content string) *ToolError {
 	if protectedBasenames[filepath.Base(abs)] {
 		return NewToolError(ErrCodeForbidden,
 			fmt.Sprintf("cannot append to %q: it is a protected wiki file", filepath.Base(abs)))
+	}
+
+	if err := cfg.MustAllowWrite(abs); err != nil {
+		return NewToolError(ErrCodeForbidden, err.Error())
 	}
 
 	data, err := os.ReadFile(abs)
@@ -244,6 +252,10 @@ func PageDelete(cfg *config.Config, relPath string) *ToolError {
 	if protectedBasenames[base] {
 		return NewToolError(ErrCodeForbidden,
 			fmt.Sprintf("cannot delete %q: it is a protected wiki file", base))
+	}
+
+	if err := cfg.MustAllowWrite(abs); err != nil {
+		return NewToolError(ErrCodeForbidden, err.Error())
 	}
 
 	if err := os.Remove(abs); err != nil {
@@ -416,6 +428,13 @@ func PageMove(cfg *config.Config, oldRel, newRel string) *ToolError {
 
 	if _, err := os.Stat(oldAbs); os.IsNotExist(err) {
 		return NewToolError(ErrCodeNotFound, fmt.Sprintf("page %q not found", oldRel))
+	}
+
+	if err := cfg.MustAllowWrite(oldAbs); err != nil {
+		return NewToolError(ErrCodeForbidden, err.Error())
+	}
+	if err := cfg.MustAllowWrite(newAbs); err != nil {
+		return NewToolError(ErrCodeForbidden, err.Error())
 	}
 
 	// Create destination directory

@@ -34,6 +34,7 @@ func main() {
 	configFile := flag.String("config", "", "path to TOML config file")
 	wikiPath := flag.String("wiki-path", "", "path to the wiki directory")
 	projectPath := flag.String("project", "", "scope all tools to this project subdirectory (must be within wiki-path)")
+	subProjectPath := flag.String("sub-project", "", "scope all tools to this sub-project (must be within --project); enables parent-project write access")
 	port := flag.Int("port", 0, "web UI HTTP listen port")
 	bind := flag.String("bind", "", "bind address for MCP HTTP transport (and web UI)")
 	mcpPort := flag.Int("mcp-port", 0, "MCP HTTP transport listen port (streamable-http, used with --transport sse)")
@@ -70,6 +71,8 @@ func main() {
 			flags.WikiPath = wikiPath
 		case "project":
 			flags.ProjectPath = projectPath
+		case "sub-project":
+			flags.SubProjectPath = subProjectPath
 		case "port":
 			flags.Port = port
 		case "bind":

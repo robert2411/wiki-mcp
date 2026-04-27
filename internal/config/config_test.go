@@ -507,3 +507,134 @@ func TestProjectPath_RelativeEscapeRejected(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestSubProjectPath_Validation(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "msb-cb")
+	subProjectDir := filepath.Join(projectDir, "mappers")
+
+	wp := wikiDir
+	pp := projectDir
+	sp := subProjectDir
+
+	t.Run("valid", func(t *testing.T) {
+		cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp, SubProjectPath: &sp})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.SubProjectPath != subProjectDir {
+			t.Errorf("SubProjectPath = %q, want %q", cfg.SubProjectPath, subProjectDir)
+		}
+		if cfg.Root() != subProjectDir {
+			t.Errorf("Root() = %q, want %q", cfg.Root(), subProjectDir)
+		}
+	})
+
+	t.Run("requires project_path", func(t *testing.T) {
+		_, err := Load(Flags{WikiPath: &wp, SubProjectPath: &sp})
+		if err == nil || !strings.Contains(err.Error(), "requires project_path") {
+			t.Errorf("expected requires project_path error, got: %v", err)
+		}
+	})
+
+	t.Run("must differ from project_path", func(t *testing.T) {
+		_, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp, SubProjectPath: &pp})
+		if err == nil || !strings.Contains(err.Error(), "must differ") {
+			t.Errorf("expected must differ error, got: %v", err)
+		}
+	})
+
+	t.Run("must be within project_path", func(t *testing.T) {
+		outside := filepath.Join(wikiDir, "other-project", "mappers")
+		_, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp, SubProjectPath: &outside})
+		if err == nil || !strings.Contains(err.Error(), "must be within") {
+			t.Errorf("expected must be within error, got: %v", err)
+		}
+	})
+}
+
+func TestMustAllowWrite_SubProject(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "msb-cb")
+	subProjectDir := filepath.Join(projectDir, "mappers")
+	siblingDir := filepath.Join(projectDir, "other")
+
+	wp := wikiDir
+	pp := projectDir
+	sp := subProjectDir
+	cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp, SubProjectPath: &sp})
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{"own sub-project file", filepath.Join(subProjectDir, "foo.md"), false},
+		{"own sub-project nested", filepath.Join(subProjectDir, "sub", "bar.md"), false},
+		{"parent direct file", filepath.Join(projectDir, "readme.md"), false},
+		{"sibling sub-project", filepath.Join(siblingDir, "foo.md"), true},
+		{"wiki root file", filepath.Join(wikiDir, "foo.md"), true},
+		{"parent subdir (sibling)", filepath.Join(projectDir, "other", "deep", "x.md"), true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := cfg.MustAllowWrite(tc.path)
+			if tc.wantErr && err == nil {
+				t.Error("expected error, got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestMustAllowWrite_NoSubProject(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	wp := wikiDir
+	cfg, err := Load(Flags{WikiPath: &wp})
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	// Without sub-project all paths are allowed.
+	if err := cfg.MustAllowWrite("/any/path/at/all"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestResolveWikiPath_SubProjectBoundary(t *testing.T) {
+	dir := t.TempDir()
+	wikiDir := filepath.Join(dir, "wiki")
+	projectDir := filepath.Join(wikiDir, "msb-cb")
+	subProjectDir := filepath.Join(projectDir, "mappers")
+
+	wp := wikiDir
+	pp := projectDir
+	sp := subProjectDir
+	cfg, err := Load(Flags{WikiPath: &wp, ProjectPath: &pp, SubProjectPath: &sp})
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	// Relative path to parent file via ".." should resolve successfully.
+	abs, err := cfg.ResolveWikiPath("../parent.md")
+	if err != nil {
+		t.Errorf("unexpected error resolving ../parent.md: %v", err)
+	}
+	if abs != filepath.Join(projectDir, "parent.md") {
+		t.Errorf("resolved = %q, want %q", abs, filepath.Join(projectDir, "parent.md"))
+	}
+
+	// Path escaping above ProjectPath must be rejected.
+	_, err = cfg.ResolveWikiPath("../../escape.md")
+	if err == nil {
+		t.Error("expected error for path escaping project boundary, got nil")
+	}
+}

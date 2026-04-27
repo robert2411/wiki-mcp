@@ -62,27 +62,29 @@ type SafetyConfig struct {
 
 // Config is the top-level configuration struct.
 type Config struct {
-	WikiPath    string       `toml:"wiki_path"`
-	ProjectPath string       `toml:"project_path"`
-	SourcesPath string       `toml:"sources_path"`
-	Web         WebConfig    `toml:"web"`
-	MCP         MCPConfig    `toml:"mcp"`
-	Index       IndexConfig  `toml:"index"`
-	Log         LogConfig    `toml:"log"`
-	Links       LinksConfig  `toml:"links"`
-	Safety      SafetyConfig `toml:"safety"`
+	WikiPath       string       `toml:"wiki_path"`
+	ProjectPath    string       `toml:"project_path"`
+	SubProjectPath string       `toml:"sub_project_path"`
+	SourcesPath    string       `toml:"sources_path"`
+	Web            WebConfig    `toml:"web"`
+	MCP            MCPConfig    `toml:"mcp"`
+	Index          IndexConfig  `toml:"index"`
+	Log            LogConfig    `toml:"log"`
+	Links          LinksConfig  `toml:"links"`
+	Safety         SafetyConfig `toml:"safety"`
 }
 
 // Flags holds CLI flag values that were explicitly set by the user.
 // nil pointer means "not set by user."
 type Flags struct {
-	ConfigFile  *string
-	WikiPath    *string
-	ProjectPath *string
-	Port        *int
-	Bind        *string
-	MCPPort     *int
-	AuthToken   *string
+	ConfigFile     *string
+	WikiPath       *string
+	ProjectPath    *string
+	SubProjectPath *string
+	Port           *int
+	Bind           *string
+	MCPPort        *int
+	AuthToken      *string
 }
 
 // Defaults returns a Config populated with built-in defaults.
@@ -161,6 +163,9 @@ func Load(flags Flags) (*Config, error) {
 	if flags.ProjectPath != nil {
 		cfg.ProjectPath = *flags.ProjectPath
 	}
+	if flags.SubProjectPath != nil {
+		cfg.SubProjectPath = *flags.SubProjectPath
+	}
 	if flags.Port != nil {
 		cfg.Web.Port = *flags.Port
 	}
@@ -182,11 +187,14 @@ func Load(flags Flags) (*Config, error) {
 	return &cfg, nil
 }
 
-// Root returns the effective working root for wiki tools. When a project path
-// is configured it returns that absolute project path; otherwise it returns
-// the "default" subdirectory of the wiki root so that the wiki root itself
-// remains a meta-level container (projects list, audit.md, log.md).
+// Root returns the effective working root for wiki tools. When a sub-project
+// path is configured it returns that; when a project path is configured it
+// returns that; otherwise it returns the "default" subdirectory of the wiki
+// root so that the wiki root itself remains a meta-level container.
 func (c *Config) Root() string {
+	if c.SubProjectPath != "" {
+		return c.SubProjectPath
+	}
 	if c.ProjectPath != "" {
 		return c.ProjectPath
 	}
@@ -195,18 +203,48 @@ func (c *Config) Root() string {
 
 // ResolveWikiPath joins rel to the effective root and returns a cleaned
 // absolute path. If ConfineToWikiPath is true and the result escapes the
-// root, an error is returned.
+// confinement boundary, an error is returned.
+//
+// When a sub-project is active the confinement boundary is ProjectPath (the
+// parent project), not SubProjectPath. This lets sub-projects address parent
+// files via "../file.md" while still being blocked from escaping above the
+// parent. MustAllowWrite enforces sibling exclusion on write operations.
 func (c *Config) ResolveWikiPath(rel string) (string, error) {
 	root := c.Root()
 	resolved := filepath.Join(root, rel)
 
 	if c.Safety.ConfineToWikiPath {
-		if resolved != root && !strings.HasPrefix(resolved, root+string(os.PathSeparator)) {
-			return "", fmt.Errorf("path %q escapes wiki root %q", rel, root)
+		boundary := root
+		if c.SubProjectPath != "" {
+			boundary = c.ProjectPath
+		}
+		if resolved != boundary && !strings.HasPrefix(resolved, boundary+string(os.PathSeparator)) {
+			return "", fmt.Errorf("path %q escapes wiki root %q", rel, boundary)
 		}
 	}
 
 	return resolved, nil
+}
+
+// MustAllowWrite returns ErrCodeForbidden when a sub-project is active and
+// absPath falls outside the allowed write scope:
+//   - within SubProjectPath (own scope, any depth), or
+//   - a direct child of ProjectPath (parent project top-level files only).
+//
+// When no sub-project is configured every path is allowed.
+func (c *Config) MustAllowWrite(absPath string) error {
+	if c.SubProjectPath == "" {
+		return nil
+	}
+	// Own sub-project scope.
+	if absPath == c.SubProjectPath || strings.HasPrefix(absPath, c.SubProjectPath+string(os.PathSeparator)) {
+		return nil
+	}
+	// Direct child of parent project (top-level file, not inside a sibling sub-project).
+	if filepath.Dir(absPath) == c.ProjectPath {
+		return nil
+	}
+	return fmt.Errorf("sub-project %q cannot write to %q: outside own scope and parent project root", c.SubProjectPath, absPath)
 }
 
 // MustMutate returns ErrReadOnly when the config has ReadOnly set.
@@ -241,6 +279,7 @@ func xdgConfigPath() string {
 func applyEnvOverrides(cfg *Config) {
 	envStr("WIKI_MCP_WIKI_PATH", &cfg.WikiPath)
 	envStr("WIKI_MCP_PROJECT_PATH", &cfg.ProjectPath)
+	envStr("WIKI_MCP_SUB_PROJECT_PATH", &cfg.SubProjectPath)
 	envStr("WIKI_MCP_SOURCES_PATH", &cfg.SourcesPath)
 	envBool("WIKI_MCP_WEB_ENABLED", &cfg.Web.Enabled)
 	envInt("WIKI_MCP_WEB_PORT", &cfg.Web.Port)
@@ -307,6 +346,28 @@ func validate(cfg *Config) error {
 			return fmt.Errorf("project_path %q must be within wiki_path %q", absProject, cfg.WikiPath)
 		}
 		cfg.ProjectPath = absProject
+	}
+
+	if cfg.SubProjectPath != "" {
+		if cfg.ProjectPath == "" {
+			return fmt.Errorf("sub_project_path requires project_path to be set")
+		}
+		raw := cfg.SubProjectPath
+		if !filepath.IsAbs(raw) {
+			raw = filepath.Join(cfg.ProjectPath, raw)
+		}
+		absSubProject, err := filepath.Abs(raw)
+		if err != nil {
+			return fmt.Errorf("cannot resolve sub_project_path %q: %w", cfg.SubProjectPath, err)
+		}
+		absSubProject = filepath.Clean(absSubProject)
+		if absSubProject == cfg.ProjectPath {
+			return fmt.Errorf("sub_project_path %q must differ from project_path %q", absSubProject, cfg.ProjectPath)
+		}
+		if !strings.HasPrefix(absSubProject, cfg.ProjectPath+string(os.PathSeparator)) {
+			return fmt.Errorf("sub_project_path %q must be within project_path %q", absSubProject, cfg.ProjectPath)
+		}
+		cfg.SubProjectPath = absSubProject
 	}
 
 	if cfg.SourcesPath == "" {
