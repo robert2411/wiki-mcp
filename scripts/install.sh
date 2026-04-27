@@ -9,8 +9,8 @@ BINARY="wiki-mcp"
 # Resolve OS
 OS="$(uname -s)"
 case "${OS}" in
-  Linux)  OS="Linux" ;;
-  Darwin) OS="Darwin" ;;
+  Linux)  OS="linux" ;;
+  Darwin) OS="darwin" ;;
   *)
     echo "Unsupported OS: ${OS}" >&2
     exit 1
@@ -20,7 +20,7 @@ esac
 # Resolve arch
 ARCH="$(uname -m)"
 case "${ARCH}" in
-  x86_64|amd64)    ARCH="x86_64" ;;
+  x86_64|amd64)    ARCH="amd64" ;;
   aarch64|arm64)   ARCH="arm64" ;;
   *)
     echo "Unsupported architecture: ${ARCH}" >&2
@@ -48,9 +48,9 @@ curl -sSfL "${BASE_URL}/${ARCHIVE}" -o "${TMP}/${ARCHIVE}"
 # Verify checksum before extracting
 curl -sSfL "${BASE_URL}/checksums.txt" -o "${TMP}/checksums.txt"
 if command -v sha256sum >/dev/null 2>&1; then
-  (cd "${TMP}" && grep "${ARCHIVE}" checksums.txt | sha256sum -c -)
+  (cd "${TMP}" && grep "  ${ARCHIVE}$" checksums.txt | sha256sum -c -)
 elif command -v shasum >/dev/null 2>&1; then
-  (cd "${TMP}" && grep "${ARCHIVE}" checksums.txt | shasum -a 256 -c -)
+  (cd "${TMP}" && grep "  ${ARCHIVE}$" checksums.txt | shasum -a 256 -c -)
 else
   echo "Warning: no sha256sum or shasum found — skipping checksum verification" >&2
 fi
