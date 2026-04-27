@@ -399,7 +399,7 @@ func TestEnvScalarOverrides(t *testing.T) {
 
 func TestRoot_NoProject(t *testing.T) {
 	cfg := &Config{WikiPath: "/wiki"}
-	want := "/wiki/default"
+	want := filepath.Join("/wiki", "default")
 	if cfg.Root() != want {
 		t.Errorf("Root() = %q, want %q", cfg.Root(), want)
 	}
