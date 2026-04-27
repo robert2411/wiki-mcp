@@ -104,6 +104,12 @@ max_page_bytes = 1048576      # 1 MiB default.
 | `--serve-only`    | Run web UI only, no MCP transport                                    |
 | `--version`       | Print version and exit                                               |
 
+## Subcommands
+
+| Subcommand            | Description                                                                                                                                              |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `wiki-mcp init [dir]` | Bootstrap a wiki at `dir` (default: current directory). Creates `index.md`, `log.md`, and section subdirectories. Existing files are never overwritten. Accepts `--config` and `--project` flags. |
+
 ## Projects
 
 A **project** is a subdirectory of `wiki_path` that contains its own `index.md`. Projects let a single wiki-mcp instance serve multiple focused knowledge bases.
@@ -160,7 +166,7 @@ Relative paths are resolved against `wiki_path`. Absolute paths within `wiki_pat
 
 Projects can nest arbitrarily deep. `project_path` is validated at startup: it must be an absolute path within `wiki_path`, or the server exits with an error.
 
-Use `wiki_init` to bootstrap a new project directory with its own `index.md`, `log.md`, and section subdirectories.
+Use `wiki_init` (MCP tool) or the `wiki-mcp init` shell command to bootstrap a new project directory with its own `index.md`, `log.md`, and section subdirectories.
 
 ## Audit log
 

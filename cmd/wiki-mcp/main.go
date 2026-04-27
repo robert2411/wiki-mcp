@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"time"
@@ -32,7 +34,64 @@ const (
 	transportSSE   = "sse"
 )
 
+func runInit(args []string) {
+	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	configFile := fs.String("config", "", "path to TOML config file")
+	projectPath := fs.String("project", "", "scope init to this project subdirectory")
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: wiki-mcp init [flags] [dir]\n\nBootstraps a wiki directory with index.md, log.md, and section subdirectories.\nExisting files are never overwritten.\n\nArguments:\n  dir  wiki root directory to initialise (default: current directory)\n\nFlags:\n")
+		fs.PrintDefaults()
+	}
+	_ = fs.Parse(args)
+
+	dir := fs.Arg(0)
+	if dir == "" {
+		dir = "."
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	var flags config.Flags
+	flags.WikiPath = &absDir
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "config":
+			flags.ConfigFile = configFile
+		case "project":
+			flags.ProjectPath = projectPath
+		}
+	})
+
+	cfg, err := config.Load(flags)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	result, toolErr := wiki.WikiInit(cfg)
+	if toolErr != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", toolErr.Message)
+		os.Exit(1)
+	}
+
+	fmt.Printf("wiki initialised: %s\n", result.WikiPath)
+	if len(result.Created) > 0 {
+		fmt.Printf("created:  %s\n", strings.Join(result.Created, ", "))
+	}
+	if len(result.Skipped) > 0 {
+		fmt.Printf("skipped:  %s\n", strings.Join(result.Skipped, ", "))
+	}
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		runInit(os.Args[2:])
+		return
+	}
+
 	showVersion := flag.Bool("version", false, "print version and exit")
 	configFile := flag.String("config", "", "path to TOML config file")
 	wikiPath := flag.String("wiki-path", "", "path to the wiki directory")
@@ -48,7 +107,7 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "wiki-mcp %s — a personal wiki with MCP integration\n\n", version)
-		fmt.Fprintf(os.Stderr, "Usage:\n  wiki-mcp [flags]\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n  wiki-mcp [flags]\n  wiki-mcp init [dir]\n\nFlags:\n")
 		flag.PrintDefaults()
 	}
 

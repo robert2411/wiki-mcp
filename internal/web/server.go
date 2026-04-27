@@ -347,6 +347,8 @@ func (s *Server) serveRootPage(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleWikiPage maps /{*} → {*}.md (catch-all route).
+// If the .md file is not found it falls back to {wiki_path}/{path}/index.md
+// so that project-directory URLs (e.g. /proxyserver) resolve correctly.
 func (s *Server) handleWikiPage(w http.ResponseWriter, r *http.Request) {
 	urlPath := chi.URLParam(r, "*")
 	if urlPath == "" {
@@ -354,7 +356,48 @@ func (s *Server) handleWikiPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	relPath := filepath.Clean(urlPath) + ".md"
+	abs, err := s.cfg.ResolveWikiPath(relPath)
+	if err == nil {
+		if _, statErr := os.Stat(abs); statErr == nil {
+			s.servePage(w, r, relPath)
+			return
+		}
+	}
+	// Fall back to project index: {wiki_path}/{urlPath}/index.md
+	projectIndex := filepath.Join(s.cfg.WikiPath, filepath.Clean(urlPath), "index.md")
+	if _, statErr := os.Stat(projectIndex); statErr == nil {
+		s.serveAbsPage(w, r, projectIndex)
+		return
+	}
 	s.servePage(w, r, relPath)
+}
+
+// serveAbsPage renders the markdown file at an absolute path, bypassing
+// ResolveWikiPath. Used for project index pages whose path is known to be
+// within wiki_path but outside cfg.Root().
+func (s *Server) serveAbsPage(w http.ResponseWriter, r *http.Request, abs string) {
+	cp, err := s.cachedPageEntry(abs, abs)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "render error", http.StatusInternalServerError)
+		s.logger.Error("render page", "path", abs, "err", err)
+		return
+	}
+	w.Header().Set("ETag", cp.etag)
+	w.Header().Set("Last-Modified", cp.modTime.UTC().Format(http.TimeFormat))
+	data := pageData{
+		Title:       cp.page.Title,
+		WikiTitle:   s.cachedWikiTitle(),
+		ContentHTML: template.HTML(cp.page.HTML), // #nosec G203 — content is produced by our own markdown renderer
+		Nav:         s.navSections(),
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.tmplPage.Execute(w, data); err != nil {
+		s.logger.Error("template execute", "err", err)
+	}
 }
 
 func (s *Server) servePage(w http.ResponseWriter, r *http.Request, relPath string) {

@@ -147,6 +147,16 @@ The only required field is `wiki_path`. Create `~/.config/wiki-mcp/config.toml` 
 wiki_path = "/home/yourname/Documents/wiki"
 ```
 
+Once `wiki_path` is set, bootstrap the directory structure:
+
+```bash
+wiki-mcp init /home/yourname/Documents/wiki
+# or, from inside the directory:
+wiki-mcp init
+```
+
+This creates `index.md`, `log.md`, and section subdirectories. Existing files are never overwritten. Pass `--project <name>` to initialise a specific project subdirectory instead of the default one.
+
 For the full config reference — all TOML keys, environment variables, and CLI flags — see **[docs/config.md](config.md)**.
 
 ---
