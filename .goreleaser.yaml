@@ -114,3 +114,18 @@ docker_manifests:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/wiki-mcp:{{ .Version }}-amd64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/wiki-mcp:{{ .Version }}-arm64"
 
+brews:
+  - name: wiki-mcp
+    repository:
+      owner: robert2411
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/robert2411/wiki-mcp
+    description: Personal wiki server with MCP integration
+    license: MIT
+    test: |
+      system "#{bin}/wiki-mcp", "--version"
+    install: |
+      bin.install "wiki-mcp"
+
