@@ -1,4 +1,4 @@
-FROM debian:12-slim AS git-layer
+FROM debian:13-slim AS git-layer
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/*
