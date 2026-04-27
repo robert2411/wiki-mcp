@@ -88,7 +88,9 @@ func (s *Server) appendAuditEntry(toolName string, req mcp.CallToolRequest) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	// Write header if file is empty.
 	if fi, err := f.Stat(); err == nil && fi.Size() == 0 {
