@@ -28,8 +28,9 @@ func resolveWiki(t *testing.T) string {
 func TestRenderPage_AllExistingPages(t *testing.T) {
 	wikiPath := resolveWiki(t)
 	c := &config.Config{
-		WikiPath: wikiPath,
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 
 	entries, err := filepath.Glob(filepath.Join(wikiPath, "**/*.md"))
@@ -142,8 +143,9 @@ func TestFrontmatter_RenderedAsBlock(t *testing.T) {
 func TestGFM_SummaryPage(t *testing.T) {
 	wikiPath := resolveWiki(t)
 	c := &config.Config{
-		WikiPath: wikiPath,
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 
 	page, err := RenderPage(c, "ollama-java-code-review/summary.md")

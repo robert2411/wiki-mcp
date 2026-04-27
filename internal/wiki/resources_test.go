@@ -201,8 +201,9 @@ func TestResourceIndex_PathEscapeBlocked(t *testing.T) {
 	// Verify index handler uses ResolveWikiPath by pointing it at a temp dir with no index.md.
 	root := t.TempDir()
 	cfg := &config.Config{
-		WikiPath: root,
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    root,
+		ProjectPath: root,
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 	handler := handleResourceIndex(cfg)
 	contents, err := handler(context.Background(), resourceRequest("wiki://index"))

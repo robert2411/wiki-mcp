@@ -13,6 +13,7 @@ func indexTestConfig(t *testing.T, wikiPath string) *config.Config {
 	t.Helper()
 	cfg := config.Defaults()
 	cfg.WikiPath = wikiPath
+	cfg.ProjectPath = wikiPath
 	cfg.Safety.ConfineToWikiPath = true
 	cfg.Safety.MaxPageBytes = 1048576
 	return &cfg

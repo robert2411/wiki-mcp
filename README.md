@@ -87,7 +87,7 @@ Done. Ask your AI assistant to list the wiki tools and start using them.
 
 ### Projects
 
-A **project** is a subdirectory of your wiki root containing its own `index.md`. Scope any MCP session to a project with `--project /path/to/wiki/my-project` (or `WIKI_MCP_PROJECT_PATH`). All tools then operate within that subtree. `project_list` returns all projects at the wiki root. The web UI home page lists them automatically. See [docs/config.md § Projects](docs/config.md#projects).
+The wiki root is a meta container holding only `index.md` (projects overview), `audit.md`, and `log.md`. All content lives in project subdirectories. Without `--project`, tools operate in a `default/` project created automatically by `wiki_init`. Use `--project /path/to/wiki/my-project` (or `WIKI_MCP_PROJECT_PATH`) to scope a session to any project. `project_list` returns all projects. The web UI home page lists them automatically. See [docs/config.md § Projects](docs/config.md#projects).
 
 ### Audit log
 

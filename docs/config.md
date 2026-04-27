@@ -108,17 +108,27 @@ max_page_bytes = 1048576      # 1 MiB default.
 
 A **project** is a subdirectory of `wiki_path` that contains its own `index.md`. Projects let a single wiki-mcp instance serve multiple focused knowledge bases.
 
+The **wiki root** is a meta container. It holds only:
+- `index.md` — auto-generated projects overview
+- `audit.md` — server-side audit log
+- `log.md` — wiki-wide log
+
+All wiki content lives inside project subdirectories. When no `project_path` is configured, tools operate in a **`default`** project that is automatically created by `wiki_init`.
+
 ```
 wiki/
-  index.md          ← wiki root index
-  log.md
+  index.md          ← wiki root meta (projects overview)
+  audit.md          ← audit log (server-side only)
+  log.md            ← wiki-wide log
+  default/          ← default project (used when no --project flag)
+    index.md
+    log.md
+    research/
+    entities/
   my-project/
     index.md        ← project index (makes this a project)
     log.md
-    research/
-      ...
-  another-project/
-    index.md
+    ...
 ```
 
 When `project_path` is set, all tools (`page_read`, `page_write`, `page_list`, `wiki_search`, etc.) operate relative to that directory. `project_list` always scans the full `wiki_path` so you can discover all projects regardless of which one is active.

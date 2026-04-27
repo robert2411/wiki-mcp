@@ -234,7 +234,7 @@ func (s *Server) navSections() []navSection {
 // links. Falls back to a single unnamed section built from the flat search
 // index when index.md is absent, unparseable, or contains no sections.
 func navFromIndex(cfg *config.Config, fallback []SearchIndexEntry) []navSection {
-	data, err := os.ReadFile(filepath.Join(cfg.WikiPath, "index.md"))
+	data, err := os.ReadFile(filepath.Join(cfg.Root(), "index.md"))
 	if err != nil {
 		return flatNavSection(fallback)
 	}
@@ -314,11 +314,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) serveRootPage(w http.ResponseWriter, r *http.Request) {
-	abs, err := s.cfg.ResolveWikiPath("index.md")
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
+	// Always read the wiki root's index.md (meta/projects overview), not the
+	// active project's index.md.
+	abs := filepath.Join(s.cfg.WikiPath, "index.md")
 
 	cp, err := s.cachedPageEntry(abs, "index.md")
 	if err != nil {

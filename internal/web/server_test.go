@@ -27,9 +27,10 @@ func TestMain(m *testing.M) {
 func testServer(t *testing.T, wikiPath string) *httptest.Server {
 	t.Helper()
 	return testServerWithCfg(t, &config.Config{
-		WikiPath: wikiPath,
-		Web:      config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true},
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Web:         config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true},
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	})
 }
 
@@ -184,9 +185,10 @@ func TestDiskChangeReflected(t *testing.T) {
 	writeFile(t, wikiPath, "page.md", "# Page\n\nHello.")
 
 	cfg := &config.Config{
-		WikiPath: wikiPath,
-		Web:      config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: true},
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Web:         config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: true},
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	srv, err := web.NewServer(cfg, logger)
@@ -246,9 +248,10 @@ func TestAutoRebuildFalse(t *testing.T) {
 	writeFile(t, wikiPath, "index.md", "# Stable Title\n\nStable content.")
 
 	cfg := &config.Config{
-		WikiPath: wikiPath,
-		Web:      config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: false},
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Web:         config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: false},
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 	ts := testServerWithCfg(t, cfg)
 	defer ts.Close()
@@ -343,9 +346,10 @@ func TestGracefulShutdownNoLeaks(t *testing.T) {
 	writeFile(t, wikiPath, "index.md", "# Index\n")
 
 	cfg := &config.Config{
-		WikiPath: wikiPath,
-		Web:      config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: false},
-		Safety:   config.SafetyConfig{ConfineToWikiPath: true},
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath,
+		Web:         config.WebConfig{Port: 0, Bind: "127.0.0.1", Enabled: true, AutoRebuild: false},
+		Safety:      config.SafetyConfig{ConfineToWikiPath: true},
 	}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	srv, err := web.NewServer(cfg, logger)

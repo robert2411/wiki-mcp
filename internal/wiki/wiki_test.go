@@ -12,7 +12,8 @@ import (
 func testConfig(t *testing.T, wikiPath string) *config.Config {
 	t.Helper()
 	return &config.Config{
-		WikiPath: wikiPath,
+		WikiPath:    wikiPath,
+		ProjectPath: wikiPath, // pin tests to operate directly at wikiPath as the project root
 		Safety: config.SafetyConfig{
 			ConfineToWikiPath: true,
 			MaxPageBytes:      1048576,
@@ -366,7 +367,7 @@ func TestPageList_ExistingWiki(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &config.Config{WikiPath: wikiPath}
+			cfg := &config.Config{WikiPath: wikiPath, ProjectPath: wikiPath}
 			entries, te := PageList(cfg, tt.filter)
 			if te != nil {
 				t.Fatalf("unexpected error: %v", te)

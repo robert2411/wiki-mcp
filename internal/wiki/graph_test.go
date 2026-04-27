@@ -8,7 +8,8 @@ import (
 
 func existingWikiConfig(t *testing.T) *config.Config {
 	t.Helper()
-	return &config.Config{WikiPath: existingWikiPath(t)}
+	p := existingWikiPath(t)
+	return &config.Config{WikiPath: p, ProjectPath: p}
 }
 
 // --- LinksOutgoing ---

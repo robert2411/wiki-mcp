@@ -271,7 +271,8 @@ func TestResolveWikiPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				WikiPath: root,
+				WikiPath:    root,
+				ProjectPath: root, // pin tests to root so Root() == root
 				Safety: SafetyConfig{
 					ConfineToWikiPath: tt.confine,
 				},
@@ -398,8 +399,9 @@ func TestEnvScalarOverrides(t *testing.T) {
 
 func TestRoot_NoProject(t *testing.T) {
 	cfg := &Config{WikiPath: "/wiki"}
-	if cfg.Root() != "/wiki" {
-		t.Errorf("Root() = %q, want /wiki", cfg.Root())
+	want := "/wiki/default"
+	if cfg.Root() != want {
+		t.Errorf("Root() = %q, want %q", cfg.Root(), want)
 	}
 }
 

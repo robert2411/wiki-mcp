@@ -16,8 +16,11 @@ type InitResult struct {
 	Skipped  []string `json:"skipped"`
 }
 
-// WikiInit bootstraps a wiki at cfg.Root(): creates the directory, section
-// subdirectories, index.md, and log.md. Existing files are never overwritten.
+// WikiInit bootstraps a wiki. When no project is configured it also creates
+// root-level meta files (index.md, log.md) at cfg.WikiPath before
+// bootstrapping the default project at cfg.Root(). When a project is
+// explicitly configured only that project directory is bootstrapped.
+// Existing files are never overwritten.
 func WikiInit(cfg *config.Config) (*InitResult, *ToolError) {
 	if err := cfg.MustMutate(); err != nil {
 		return nil, NewToolError(ErrCodeReadOnly, err.Error())
@@ -25,6 +28,27 @@ func WikiInit(cfg *config.Config) (*InitResult, *ToolError) {
 
 	root := cfg.Root()
 	result := &InitResult{WikiPath: root}
+
+	// Bootstrap root-level meta files when no explicit project is set.
+	if cfg.ProjectPath == "" {
+		if err := os.MkdirAll(cfg.WikiPath, 0o755); err != nil {
+			return nil, NewToolError(ErrCodeInternal, fmt.Sprintf("cannot create wiki directory: %v", err))
+		}
+		for _, name := range []struct{ file, content string }{
+			{"index.md", "# Wiki\n\nA personal knowledge wiki. Use `project_list` to see all projects.\n"},
+			{"log.md", logTemplate},
+		} {
+			abs := filepath.Join(cfg.WikiPath, name.file)
+			if _, err := os.Stat(abs); os.IsNotExist(err) {
+				if err := os.WriteFile(abs, []byte(name.content), 0o644); err != nil {
+					return nil, NewToolError(ErrCodeInternal, fmt.Sprintf("cannot write %s: %v", name.file, err))
+				}
+				result.Created = append(result.Created, name.file)
+			} else {
+				result.Skipped = append(result.Skipped, name.file)
+			}
+		}
+	}
 
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, NewToolError(ErrCodeInternal, fmt.Sprintf("cannot create wiki directory: %v", err))

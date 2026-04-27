@@ -183,13 +183,14 @@ func Load(flags Flags) (*Config, error) {
 }
 
 // Root returns the effective working root for wiki tools. When a project path
-// is configured it returns the absolute project path; otherwise it returns
-// the wiki path.
+// is configured it returns that absolute project path; otherwise it returns
+// the "default" subdirectory of the wiki root so that the wiki root itself
+// remains a meta-level container (projects list, audit.md, log.md).
 func (c *Config) Root() string {
 	if c.ProjectPath != "" {
 		return c.ProjectPath
 	}
-	return c.WikiPath
+	return filepath.Join(c.WikiPath, "default")
 }
 
 // ResolveWikiPath joins rel to the effective root and returns a cleaned
