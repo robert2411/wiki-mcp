@@ -54,20 +54,67 @@ Add under the top-level `mcpServers` key:
 }
 ```
 
-## Verified surface (2026-04-16)
+### Scoping to a project
 
-**17 tools:**
+Use `WIKI_MCP_PROJECT_PATH` (or `--project`) to restrict all tools to a specific project subdirectory. Without it, tools operate in the `default/` project.
+
+```json
+{
+  "mcpServers": {
+    "wiki-myproject": {
+      "type": "stdio",
+      "command": "/path/to/wiki-mcp",
+      "args": [],
+      "env": {
+        "WIKI_MCP_WIKI_PATH": "/path/to/your/wiki",
+        "WIKI_MCP_PROJECT_PATH": "/path/to/your/wiki/my-project"
+      }
+    }
+  }
+}
+```
+
+Or via CLI flag:
+
+```json
+{
+  "mcpServers": {
+    "wiki-myproject": {
+      "type": "stdio",
+      "command": "/path/to/wiki-mcp",
+      "args": ["--wiki-path", "/path/to/your/wiki", "--project", "/path/to/your/wiki/my-project"]
+    }
+  }
+}
+```
+
+You can register multiple entries in `mcpServers` — one per project — so Claude Code can switch contexts by choosing a different server:
+
+```json
+{
+  "mcpServers": {
+    "wiki-default":    { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki" } },
+    "wiki-research":   { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "/wiki/research" } },
+    "wiki-work":       { "command": "/path/to/wiki-mcp", "env": { "WIKI_MCP_WIKI_PATH": "/wiki", "WIKI_MCP_PROJECT_PATH": "/wiki/work" } }
+  }
+}
+```
+
+## Verified surface (2026-04-27)
+
+**20 tools:**
 `index_read`, `index_refresh_stats`, `index_upsert_entry`,
 `links_incoming`, `links_outgoing`,
 `log_append`, `log_tail`,
 `orphans`,
-`page_delete`, `page_list`, `page_move`, `page_read`, `page_write`,
+`page_append`, `page_delete`, `page_list`, `page_move`, `page_read`, `page_write`,
+`project_list`,
 `source_fetch_url`, `source_list`, `source_pdf_text`,
-`wiki_search`
+`wiki_init`, `wiki_search`
 
 **3 prompts:** `ingest`, `lint`, `query`
 
-**Resources:** none yet (TASK-11)
+**Resources:** `wiki://config`, `wiki://index`, `wiki://page/{path}`
 
 ## End-to-end ingest transcript
 
