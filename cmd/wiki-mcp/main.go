@@ -11,11 +11,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/server"
-	"github.com/robertstevens/wiki-mcp/internal/sources"
-	"github.com/robertstevens/wiki-mcp/internal/web"
-	"github.com/robertstevens/wiki-mcp/internal/wiki"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/server"
+	"github.com/robert2411/wiki-mcp/internal/sources"
+	"github.com/robert2411/wiki-mcp/internal/web"
+	"github.com/robert2411/wiki-mcp/internal/wiki"
 )
 
 var (

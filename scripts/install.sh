@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 # install.sh — download and install wiki-mcp binary
-# Usage: curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/install.sh | sh
+# Usage: curl -sSfL https://github.com/robert2411/wiki-mcp/releases/latest/download/install.sh | sh
 set -eu
 
-REPO="robertstevens/wiki-mcp"
+REPO="robert2411/wiki-mcp"
 BINARY="wiki-mcp"
 
 # Resolve OS

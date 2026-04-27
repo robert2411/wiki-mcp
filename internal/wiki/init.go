@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 // InitResult reports what wiki_init created or skipped.

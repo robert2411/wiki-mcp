@@ -3,7 +3,7 @@ package wiki
 import (
 	"testing"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 func existingWikiConfig(t *testing.T) *config.Config {

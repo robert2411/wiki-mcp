@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 // resourceRequest builds a ReadResourceRequest for the given URI.

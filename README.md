@@ -12,10 +12,10 @@ Get a working wiki in under 5 minutes:
 
 ```bash
 # Homebrew (macOS / Linux)
-brew install robertstevens/tap/wiki-mcp
+brew install robert2411/tap/wiki-mcp
 
 # One-line installer (macOS / Linux)
-curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/install.sh | sh
+curl -sSfL https://github.com/robert2411/wiki-mcp/releases/latest/download/install.sh | sh
 ```
 
 See [docs/install.md](docs/install.md) for Docker, Windows, and `go install` options.

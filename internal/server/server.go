@@ -17,7 +17,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 // Server wraps an MCP server with wiki-mcp configuration and registration.

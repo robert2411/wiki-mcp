@@ -21,10 +21,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/web/render"
-	"github.com/robertstevens/wiki-mcp/internal/wiki"
-	webtheme "github.com/robertstevens/wiki-mcp/web"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/web/render"
+	"github.com/robert2411/wiki-mcp/internal/wiki"
+	webtheme "github.com/robert2411/wiki-mcp/web"
 )
 
 // pageEntry holds a rendered page alongside the file metadata used for

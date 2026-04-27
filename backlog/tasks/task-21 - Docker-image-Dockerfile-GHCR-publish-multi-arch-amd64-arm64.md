@@ -72,5 +72,5 @@ Shipped Docker image support for wiki-mcp.
 **Design notes:**
 - Dockerfile is single-stage (not multi-stage as described) because goreleaser pre-builds the static binary and copies it into the Docker build context — no need for a Go builder stage.
 - `latest` manifest skips pre-release tags via `skip_push: "{{ if .Prerelease }}true{{ end }}"`.
-- `docker run -i --rm -v $WIKI:/wiki ghcr.io/robertstevens/wiki-mcp --wiki-path /wiki` overrides CMD for MCP stdio use.
+- `docker run -i --rm -v $WIKI:/wiki ghcr.io/robert2411/wiki-mcp --wiki-path /wiki` overrides CMD for MCP stdio use.
 <!-- SECTION:FINAL_SUMMARY:END -->

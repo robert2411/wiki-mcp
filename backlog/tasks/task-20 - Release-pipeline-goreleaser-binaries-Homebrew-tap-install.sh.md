@@ -66,7 +66,7 @@ License: confirm with user (recommend MIT to match the wider MCP ecosystem). Add
 Implemented the full release pipeline for wiki-mcp.
 
 **Files changed:**
-- `.goreleaser.yaml` — expanded from skeleton to full config: ldflags (`-s -w -X main.version -X main.commit -X main.date`), tar.gz/zip archives with README + LICENSE, sha256 checksums, syft SBOM per archive, Homebrew formula push to `robertstevens/homebrew-tap` repo, conventional-commit changelog
+- `.goreleaser.yaml` — expanded from skeleton to full config: ldflags (`-s -w -X main.version -X main.commit -X main.date`), tar.gz/zip archives with README + LICENSE, sha256 checksums, syft SBOM per archive, Homebrew formula push to `robert2411/homebrew-tap` repo, conventional-commit changelog
 - `cmd/wiki-mcp/main.go` — added `commit` and `date` build vars; `--version` now prints `<version> (commit=<sha>, built=<date>)`
 - `scripts/install.sh` — created: detects OS (Linux/Darwin) + arch (x86_64/arm64), downloads correct archive from GitHub Releases, installs to `$HOME/.local/bin` or `/usr/local/bin` if writable, warns if dir not in PATH
 - `LICENSE` — MIT license, 2026, Robert Stevens
@@ -81,5 +81,5 @@ Implemented the full release pipeline for wiki-mcp.
 - Homebrew formula generated at `dist/homebrew/Formula/wiki-mcp.rb`
 - Checksums + SBOM JSON generated for each archive
 
-**Remaining for AC#3:** requires creating the `robertstevens/homebrew-tap` GitHub repo and adding `HOMEBREW_TAP_TOKEN` secret — cannot be verified until first real tag push.
+**Remaining for AC#3:** requires creating the `robert2411/homebrew-tap` GitHub repo and adding `HOMEBREW_TAP_TOKEN` secret — cannot be verified until first real tag push.
 <!-- SECTION:FINAL_SUMMARY:END -->

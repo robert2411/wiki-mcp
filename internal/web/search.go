@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/robertstevens/wiki-mcp/internal/wiki"
+	"github.com/robert2411/wiki-mcp/internal/wiki"
 )
 
 // SearchIndexEntry is one page entry in the pre-built search index.

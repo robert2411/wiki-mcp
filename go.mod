@@ -1,4 +1,4 @@
-module github.com/robertstevens/wiki-mcp
+module github.com/robert2411/wiki-mcp
 
 go 1.25.0
 

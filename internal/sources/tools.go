@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/robertstevens/wiki-mcp/internal/server"
+	"github.com/robert2411/wiki-mcp/internal/server"
 )
 
 // RegisterTools registers source helper tools on the MCP server.

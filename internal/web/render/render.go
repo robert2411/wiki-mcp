@@ -14,8 +14,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/wiki"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/wiki"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"

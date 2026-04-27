@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/server"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/server"
 )
 
 // RegisterTools registers all page CRUD tools on the server.

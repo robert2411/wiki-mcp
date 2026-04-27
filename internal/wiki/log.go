@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 var allowedLogOps = map[string]bool{

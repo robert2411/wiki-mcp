@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 // IndexEntry is a single bullet in an index section.

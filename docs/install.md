@@ -25,7 +25,7 @@
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew install robertstevens/tap/wiki-mcp
+brew install robert2411/tap/wiki-mcp
 ```
 
 Installs the latest release binary. Upgrades via `brew upgrade wiki-mcp`.
@@ -35,7 +35,7 @@ Installs the latest release binary. Upgrades via `brew upgrade wiki-mcp`.
 ### One-line installer (macOS / Linux)
 
 ```bash
-curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/install.sh | sh
+curl -sSfL https://github.com/robert2411/wiki-mcp/releases/latest/download/install.sh | sh
 ```
 
 The script:
@@ -49,7 +49,7 @@ Pin a specific version:
 
 ```bash
 export WIKI_MCP_VERSION=v1.2.3
-curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/install.sh | sh
+curl -sSfL https://github.com/robert2411/wiki-mcp/releases/latest/download/install.sh | sh
 ```
 
 ---
@@ -57,7 +57,7 @@ curl -sSfL https://github.com/robertstevens/wiki-mcp/releases/latest/download/in
 ### Direct binary download (any OS)
 
 Download the release tarball that matches your platform from
-`https://github.com/robertstevens/wiki-mcp/releases/latest`, then extract and install:
+`https://github.com/robert2411/wiki-mcp/releases/latest`, then extract and install:
 
 **macOS / Linux**
 
@@ -65,7 +65,7 @@ Download the release tarball that matches your platform from
 VERSION=v1.0.0   # replace with desired version
 OS=$(uname -s)   # Darwin or Linux
 ARCH=$(uname -m) # x86_64 or arm64
-curl -L "https://github.com/robertstevens/wiki-mcp/releases/download/${VERSION}/wiki-mcp_${VERSION#v}_${OS}_${ARCH}.tar.gz" \
+curl -L "https://github.com/robert2411/wiki-mcp/releases/download/${VERSION}/wiki-mcp_${VERSION#v}_${OS}_${ARCH}.tar.gz" \
   -o wiki-mcp.tar.gz
 tar -xzf wiki-mcp.tar.gz wiki-mcp
 chmod +x wiki-mcp
@@ -76,7 +76,7 @@ mv wiki-mcp /usr/local/bin/wiki-mcp
 
 ```powershell
 $version = "1.0.0"   # without leading v
-Invoke-WebRequest -Uri "https://github.com/robertstevens/wiki-mcp/releases/download/v$version/wiki-mcp_${version}_Windows_x86_64.zip" `
+Invoke-WebRequest -Uri "https://github.com/robert2411/wiki-mcp/releases/download/v$version/wiki-mcp_${version}_Windows_x86_64.zip" `
   -OutFile wiki-mcp.zip
 Expand-Archive wiki-mcp.zip -DestinationPath "$Env:LOCALAPPDATA\wiki-mcp"
 $env:PATH += ";$Env:LOCALAPPDATA\wiki-mcp"
@@ -88,7 +88,7 @@ $env:PATH += ";$Env:LOCALAPPDATA\wiki-mcp"
 ### Docker
 
 ```bash
-docker pull ghcr.io/robertstevens/wiki-mcp:latest
+docker pull ghcr.io/robert2411/wiki-mcp:latest
 ```
 
 Run the web UI with your wiki directory mounted:
@@ -98,7 +98,7 @@ docker run --rm \
   -v /path/to/your/wiki:/wiki \
   -e WIKI_MCP_WIKI_PATH=/wiki \
   -p 9000:9000 \
-  ghcr.io/robertstevens/wiki-mcp:latest \
+  ghcr.io/robert2411/wiki-mcp:latest \
   --serve-only
 ```
 
@@ -108,13 +108,13 @@ For MCP stdio transport, pipe stdin/stdout through `docker run`:
 docker run -i --rm \
   -v /path/to/your/wiki:/wiki \
   -e WIKI_MCP_WIKI_PATH=/wiki \
-  ghcr.io/robertstevens/wiki-mcp:latest
+  ghcr.io/robert2411/wiki-mcp:latest
 ```
 
 The image is multi-arch (`linux/amd64`, `linux/arm64`). Pin a release tag in production:
 
 ```bash
-docker pull ghcr.io/robertstevens/wiki-mcp:v1.0.0
+docker pull ghcr.io/robert2411/wiki-mcp:v1.0.0
 ```
 
 ---
@@ -122,13 +122,13 @@ docker pull ghcr.io/robertstevens/wiki-mcp:v1.0.0
 ### go install (Go developers / head-of-main)
 
 ```bash
-go install github.com/robertstevens/wiki-mcp/cmd/wiki-mcp@latest
+go install github.com/robert2411/wiki-mcp/cmd/wiki-mcp@latest
 ```
 
 Installs the latest commit on `main`. For the latest release:
 
 ```bash
-go install github.com/robertstevens/wiki-mcp/cmd/wiki-mcp@v1.0.0
+go install github.com/robert2411/wiki-mcp/cmd/wiki-mcp@v1.0.0
 ```
 
 Requires Go 1.25+. The binary lands in `$(go env GOPATH)/bin/` (typically `~/go/bin/`). Ensure that directory is on your `$PATH`:
@@ -190,7 +190,7 @@ git push -u origin main
 
 ```bash
 git clone git@github.com:yourname/private-wiki.git ~/Documents/wiki
-brew install robertstevens/tap/wiki-mcp
+brew install robert2411/tap/wiki-mcp
 mkdir -p ~/.config/wiki-mcp
 cat > ~/.config/wiki-mcp/config.toml <<'EOF'
 wiki_path = "/Users/yourname/Documents/wiki"
@@ -408,6 +408,6 @@ Set `WIKI_MCP_WIKI_PATH` as a persistent user environment variable so the task p
 | `wiki_path is required` on startup | `wiki_path` not set in config, env, or CLI flag | Set `WIKI_MCP_WIKI_PATH=/path/to/wiki` or add `wiki_path = "..."` to config file. See [Discovery order](#discovery-order). |
 | `listen tcp :9000: bind: address already in use` | Another process holds port 9000 | Change the port: `wiki-mcp --port 9001` or `web.port = 9001` in config. Find the conflict: `lsof -i :9000` (macOS/Linux) or `netstat -ano | findstr :9000` (Windows). |
 | MCP client shows no tools / "server not found" | Binary not on `$PATH`, wrong command in client config, or server crashed at startup | Verify: `which wiki-mcp && wiki-mcp --version`. Check client config `command` path is absolute. Capture stderr: wrap the command with `sh -c 'wiki-mcp 2>/tmp/wiki-mcp.err'` and inspect `/tmp/wiki-mcp.err`. |
-| Windows Defender / antivirus blocks the binary | Unsigned binary from GitHub releases triggers heuristic scan | Add an exclusion for the binary path in Windows Security → Virus & threat protection → Exclusions. Or build from source: `go install github.com/robertstevens/wiki-mcp/cmd/wiki-mcp@latest`. |
-| Docker container exits immediately | `wiki_path` not mounted, or mount path mismatch | Ensure `-v /host/wiki:/wiki` and `-e WIKI_MCP_WIKI_PATH=/wiki` are both set. The env var must match the *container-side* mount path. Run interactively to see the error: `docker run -it --rm -v /host/wiki:/wiki -e WIKI_MCP_WIKI_PATH=/wiki ghcr.io/robertstevens/wiki-mcp:latest`. |
+| Windows Defender / antivirus blocks the binary | Unsigned binary from GitHub releases triggers heuristic scan | Add an exclusion for the binary path in Windows Security → Virus & threat protection → Exclusions. Or build from source: `go install github.com/robert2411/wiki-mcp/cmd/wiki-mcp@latest`. |
+| Docker container exits immediately | `wiki_path` not mounted, or mount path mismatch | Ensure `-v /host/wiki:/wiki` and `-e WIKI_MCP_WIKI_PATH=/wiki` are both set. The env var must match the *container-side* mount path. Run interactively to see the error: `docker run -it --rm -v /host/wiki:/wiki -e WIKI_MCP_WIKI_PATH=/wiki ghcr.io/robert2411/wiki-mcp:latest`. |
 | Docker: `permission denied` writing to wiki | Container process UID doesn't match volume owner | Run with matching UID: `docker run --user $(id -u):$(id -g) ...`. Or `chown -R $(id -u) /host/wiki` to make the host user the owner. |

@@ -61,7 +61,7 @@ Deliver: `go build ./cmd/wiki-mcp && ./wiki-mcp --help` prints usage. No MCP, to
 <!-- SECTION:PLAN:BEGIN -->
 ## Implementation Plan
 
-1. Init Go module (`go mod init github.com/robertstevens/wiki-mcp`, Go 1.22+)
+1. Init Go module (`go mod init github.com/robert2411/wiki-mcp`, Go 1.22+)
 2. Create directory layout: `cmd/wiki-mcp/`, `internal/{config,server,wiki,web,sources}/`, `web/theme/default/`
 3. Write `cmd/wiki-mcp/main.go` with `flag` stdlib, version via ldflags, `--help` usage
 4. Add placeholder `.go` files in each internal package + embedded theme stub
@@ -75,5 +75,5 @@ Deliver: `go build ./cmd/wiki-mcp && ./wiki-mcp --help` prints usage. No MCP, to
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Scaffolded Go module and project skeleton.\n\n- `go.mod` declares `github.com/robertstevens/wiki-mcp` with Go 1.22 floor\n- `cmd/wiki-mcp/main.go` uses stdlib `flag`; `--help`, `--version`, `--wiki`, `--http` flags; version injected via ldflags\n- Directory layout: `cmd/wiki-mcp/`, `internal/{config,server,wiki,web,sources}/`, `web/theme/default/`\n- `.golangci.yml` configured for golangci-lint v2; passes clean\n- Smoke test in `cmd/wiki-mcp/main_test.go` builds binary and verifies `--help` output\n- `.gitignore` covers `wiki-mcp`, `dist/`, `*.exe`\n- `Makefile` with `build`, `test`, `lint`, `run` targets\n- `.goreleaser.yaml` stub for TASK-20
+Scaffolded Go module and project skeleton.\n\n- `go.mod` declares `github.com/robert2411/wiki-mcp` with Go 1.22 floor\n- `cmd/wiki-mcp/main.go` uses stdlib `flag`; `--help`, `--version`, `--wiki`, `--http` flags; version injected via ldflags\n- Directory layout: `cmd/wiki-mcp/`, `internal/{config,server,wiki,web,sources}/`, `web/theme/default/`\n- `.golangci.yml` configured for golangci-lint v2; passes clean\n- Smoke test in `cmd/wiki-mcp/main_test.go` builds binary and verifies `--help` output\n- `.gitignore` covers `wiki-mcp`, `dist/`, `*.exe`\n- `Makefile` with `build`, `test`, `lint`, `run` targets\n- `.goreleaser.yaml` stub for TASK-20
 <!-- SECTION:FINAL_SUMMARY:END -->

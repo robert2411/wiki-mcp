@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/config"
 )
 
 func twoSectionCfg(t *testing.T, root string) *config.Config {

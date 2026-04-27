@@ -13,8 +13,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/wiki/linkgraph"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/wiki/linkgraph"
 )
 
 // Error codes returned in structured tool errors.

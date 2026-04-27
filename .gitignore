@@ -6,3 +6,7 @@ existing/
 /wiki-mcp
 dist/
 *.exe
+
+# JetBrains IDE metadata
+.idea/
+

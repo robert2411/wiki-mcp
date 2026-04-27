@@ -16,8 +16,8 @@ import (
 
 	"go.uber.org/goleak"
 
-	"github.com/robertstevens/wiki-mcp/internal/config"
-	"github.com/robertstevens/wiki-mcp/internal/web"
+	"github.com/robert2411/wiki-mcp/internal/config"
+	"github.com/robert2411/wiki-mcp/internal/web"
 )
 
 func TestMain(m *testing.M) {
