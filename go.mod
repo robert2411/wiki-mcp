@@ -11,7 +11,7 @@ require (
 	github.com/mark3labs/mcp-go v0.54.1
 	github.com/yuin/goldmark v1.8.2
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
