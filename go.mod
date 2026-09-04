@@ -7,7 +7,7 @@ require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
+	github.com/ledongthuc/pdf v0.0.0-20260903153007-b3c860c23753
 	github.com/mark3labs/mcp-go v0.58.0
 	github.com/yuin/goldmark v1.8.5
 	go.uber.org/goleak v1.3.0
