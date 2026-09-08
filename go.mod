@@ -1,6 +1,6 @@
 module github.com/robert2411/wiki-mcp
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -11,7 +11,7 @@ require (
 	github.com/mark3labs/mcp-go v0.58.0
 	github.com/yuin/goldmark v1.8.6
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
